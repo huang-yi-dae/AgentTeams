@@ -35,12 +35,13 @@ sys.path.insert(0, BASE_DIR)
 
 from core.trace import Tracer, STAGES                          # noqa: E402
 from core.models import TicketStatus, ApprovalDecision          # noqa: E402
-from adapters.im_adapter import WeChatGroupAdapter              # noqa: E402
+from adapters.im_adapter import WeComChannelGateway, ServiceDeskBot  # noqa: E402
 from adapters.mcp_gateway import MockMcpGateway                 # noqa: E402
 from adapters.approval_adapter import ApprovalAdapter          # noqa: E402
 from skills.knowledge_skills import KnowledgeBase               # noqa: E402
 from agents.orchestrator import TeamLeader                      # noqa: E402
 from skills.verify_skills import ObservabilityProbe            # noqa: E402
+from chat_view import write_chat                                # noqa: E402
 
 
 # --------------------------------------------------------------------------
@@ -83,13 +84,14 @@ def _kb_counts_from_file(path: str) -> Dict[str, int]:
 # 上下文装配
 # --------------------------------------------------------------------------
 def build_context(policy: Dict[str, Any]) -> Dict[str, Any]:
-    im = WeChatGroupAdapter(WECHAT_FILE)
+    gateway = WeComChannelGateway(WECHAT_FILE)
+    tracer = Tracer(verbose=policy.get("verbose", True))
+    bot = ServiceDeskBot(gateway, tracer)        # 服务台机器人（渠道接待 + 消息转交）
     mcp = MockMcpGateway(SYSTEMS_FILE)
     kb = KnowledgeBase(KB_FILE)
     approval = ApprovalAdapter(APPROVERS_FILE, policy)
-    tracer = Tracer(verbose=policy.get("verbose", True))
-    leader = TeamLeader(tracer, policy, im, mcp, kb, approval)
-    return {"im": im, "mcp": mcp, "kb": kb, "approval": approval,
+    leader = TeamLeader(tracer, policy, gateway, bot, mcp, kb, approval)
+    return {"gateway": gateway, "bot": bot, "mcp": mcp, "kb": kb, "approval": approval,
             "tracer": tracer, "leader": leader}
 
 
@@ -454,6 +456,49 @@ def write_dashboard(path: str, policy: Dict[str, Any], incidents: List[Any],
 
 
 # --------------------------------------------------------------------------
+# 产物导出（run_demo 主流程与 server.py 共用）
+# --------------------------------------------------------------------------
+def export_artifacts(policy: Dict[str, Any], incidents: List[Any], tracer: Tracer,
+                     kb: Any, metrics: Dict[str, Any], kb_before: Dict[str, int],
+                     kb_after: Dict[str, int], all_kb_updates: List[Dict[str, Any]],
+                     no_chat: bool = False, keep_kb: bool = False) -> Dict[str, str]:
+    """把一次运行结果导出为 trace.json / report.md / dashboard.html / chat.html，
+    并在需要时还原知识库基线。供 run_demo 主流程与 server.py 的 /run 共用。
+    """
+    os.makedirs(OUT_DIR, exist_ok=True)
+    extra = {
+        "run_at": policy.get("_run_at", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
+        "approval_mode": policy.get("approval", {}).get("mode", "manual"),
+        "interactive": bool(policy.get("approval", {}).get("interactive")),
+        "scenarios_run": [inc.scenario for inc in incidents],
+        "incidents": [inc.to_dict() for inc in incidents],
+        "metrics": metrics,
+        "kb_before": kb_before,
+        "kb_after": kb_after,
+        "kb_new_items": all_kb_updates,
+    }
+    trace_path = os.path.join(OUT_DIR, "trace.json")
+    tracer.export(trace_path, extra)
+
+    report_path = os.path.join(OUT_DIR, "report.md")
+    write_report(report_path, policy, incidents, metrics, kb_before, kb_after)
+
+    dashboard_path = os.path.join(OUT_DIR, "dashboard.html")
+    write_dashboard(dashboard_path, policy, incidents, metrics,
+                    extract_stage_matrix(tracer), kb_before, kb_after, all_kb_updates)
+
+    chat_path = os.path.join(OUT_DIR, "chat.html")
+    if not no_chat:
+        write_chat(chat_path, policy, incidents, metrics)
+
+    if not keep_kb:
+        reset_kb_to_baseline()
+
+    return {"trace": trace_path, "report": report_path,
+            "dashboard": dashboard_path, "chat": chat_path}
+
+
+# --------------------------------------------------------------------------
 # 主流程
 # --------------------------------------------------------------------------
 def main() -> int:
@@ -467,6 +512,8 @@ def main() -> int:
     ap.add_argument("--list", action="store_true", help="列出全部场景后退出")
     ap.add_argument("--keep-kb", action="store_true",
                     help="运行结束后不还原知识库（保留写入结果）")
+    ap.add_argument("--no-chat", action="store_true",
+                    help="不生成对话式 chat.html（仅 trace/report/dashboard）")
     args = ap.parse_args()
 
     # 载入配置
@@ -484,7 +531,7 @@ def main() -> int:
     kb_before = _kb_counts_from_file(KB_BASE)
 
     # 列出场景
-    tmp_im = WeChatGroupAdapter(WECHAT_FILE)
+    tmp_im = WeComChannelGateway(WECHAT_FILE)
     all_scenarios = tmp_im.list_scenarios()
     if args.list:
         print("可用场景：")
@@ -516,41 +563,18 @@ def main() -> int:
     for inc in incidents:
         all_kb_updates.extend(inc.kb_updates)
 
-    # 阶段矩阵
-    stage_matrix = extract_stage_matrix(tracer)
-
-    # 导出 artifact
-    os.makedirs(OUT_DIR, exist_ok=True)
-    extra = {
-        "run_at": policy["_run_at"],
-        "approval_mode": policy["approval"]["mode"],
-        "interactive": bool(policy["approval"].get("interactive")),
-        "scenarios_run": scenarios,
-        "incidents": [inc.to_dict() for inc in incidents],
-        "metrics": metrics,
-        "kb_before": kb_before,
-        "kb_after": kb_after,
-        "kb_new_items": all_kb_updates,
-    }
-    trace_path = os.path.join(OUT_DIR, "trace.json")
-    tracer.export(trace_path, extra)
-
-    report_path = os.path.join(OUT_DIR, "report.md")
-    write_report(report_path, policy, incidents, metrics, kb_before, kb_after)
-
-    dashboard_path = os.path.join(OUT_DIR, "dashboard.html")
-    write_dashboard(dashboard_path, policy, incidents, metrics, stage_matrix,
-                    kb_before, kb_after, all_kb_updates)
-
-    # 还原知识库基线（保持仓库可复现；diff 已写入 artifact）
-    if not args.keep_kb:
-        reset_kb_to_baseline()
+    # 导出产物（trace/report/dashboard/chat + 还原 KB 基线）
+    paths = export_artifacts(
+        policy, incidents, tracer, kb, metrics, kb_before, kb_after,
+        all_kb_updates, no_chat=args.no_chat, keep_kb=args.keep_kb)
 
     # 控制台小结
     print(f"\n{'='*72}\n  运行完成 · 产物：")
-    print(f"    trace.json   → {trace_path}")
-    print(f"    report.md    → {report_path}")
-    print(f"    dashboard.html → {dashboard_path}")
+    print(f"    trace.json   → {paths['trace']}")
+    print(f"    report.md    → {paths['report']}")
+    print(f"    dashboard.html → {paths['dashboard']}")
+    if not args.no_chat:
+        print(f"    chat.html    → {paths['chat']}  (对话式视图：TeamLeader/各 Agent 气泡)")
     print(f"  指标：工单 {metrics.get('incidents_total',0)} · "
           f"解决 {metrics.get('first_time_resolved',0)} · "
           f"升级 {metrics.get('escalated',0)} · "

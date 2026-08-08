@@ -72,7 +72,7 @@ class TraceEvent:
 
 # 阶段定义：对应用户要求的端到端七个可见阶段
 STAGES = [
-    ("S1", "微信群消息接入", "IM Adapter 拉取群消息"),
+    ("S1", "渠道接入", "企业微信回调 webhook 推送 → 服务台机器人接待"),
     ("S2", "事件受理与解析", "Ticket Intake Agent 标准化 + 去重"),
     ("S3", "知识检索", "Knowledge Agent 检索 Runbook / 案例 / Legacy 经验"),
     ("S4", "风险分诊", "Triage Analyst 判定风险等级与执行路径"),

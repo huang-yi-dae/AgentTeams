@@ -1,0 +1,10 @@
+services:
+  servicedesk:
+    build: .
+    image: servicedesk-pilot:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      # 把产物目录挂到宿主机，方便直接在本地看 HTML 效果
+      - ./out:/app/out
+    restart: unless-stopped

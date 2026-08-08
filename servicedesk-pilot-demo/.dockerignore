@@ -1,0 +1,6 @@
+# 不进镜像的产物与缓存
+out/
+__pycache__/
+*.pyc
+.git/
+.gitignore

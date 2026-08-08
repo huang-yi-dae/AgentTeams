@@ -1,0 +1,58 @@
+{
+  "team": {
+    "name": "servicedesk-pilot",
+    "version": "0.1.0",
+    "description": "中小企业 IT 服务台多 Agent 智能处置 Demo（GOAI Agent Infra 赛道初赛）",
+    "primary_runtime": "mock-local",
+    "worker_runtime": "mock-local",
+    "creation_policy": {
+      "mode": "builtin",
+      "rule": "Demo 内置 6 个职能 Agent + TeamLeader 中枢调度；真实接入时由 AgentTeams Manager 创建 Worker"
+    },
+    "team_leader": {
+      "id": "servicedesk_team_leader",
+      "name": "TeamLeader",
+      "role": "服务台任务总控与协调者（仅编排，不直接调业务工具）"
+    },
+    "channel_integration": {
+      "reality": "微信群/企微群不能由机器人自由拉取与回复消息",
+      "receive": "企业微信『接收消息』回调 URL（被动 webhook）把用户消息推送至服务台后端",
+      "deliver": "企业微信『应用消息接口 / 客服消息接口』主动下发进展与结论",
+      "components": {
+        "gateway": "WeComChannelGateway —— 渠道接入网关（接收回调 + 下发应用消息）",
+        "bot": "ServiceDeskBot —— 服务台机器人（渠道接待 + 消息转交）"
+      }
+    },
+    "task_submission_policy": {
+      "receive": "企业微信回调 webhook 推送群消息 → WeComChannelGateway",
+      "ack": "ServiceDeskBot 礼貌应答并报障人",
+      "normalize": "Ticket Intake Agent 把消息标准化为工单",
+      "dispatch": "TeamLeader 接收工单并调度 Knowledge/Triage/Resolution/Verify"
+    }
+  },
+  "agents": [
+    {"id": "ticket_intake", "name": "Ticket Intake", "role": "IM 消息 → 标准化工单（仿 Alert Intake）", "tools": ["im_gateway", "normalizer"]},
+    {"id": "knowledge", "name": "Knowledge", "role": "专家经验检索", "tools": ["rag_runbook", "rag_case", "rag_legacy"]},
+    {"id": "triage", "name": "Triage Analyst", "role": "影响面与风险判定", "tools": ["risk_engine", "mcp_probe"]},
+    {"id": "resolution", "name": "Resolution", "role": "方案生成与执行", "tools": ["safe_resolver", "mcp_execute"]},
+    {"id": "verify", "name": "Verify", "role": "恢复验证与知识回流", "tools": ["recovery_verifier", "knowledge_reflector"]}
+  ],
+  "workflow": [
+    {"step": 1, "agent": "wecom_gateway", "task": "receive_webhook_and_push_to_backend"},
+    {"step": 2, "agent": "servicedesk_bot", "task": "acknowledge_reporter_and_handoff"},
+    {"step": 3, "agent": "ticket_intake", "task": "normalize_messages_to_ticket"},
+    {"step": 4, "agent": "team_leader", "task": "receive_ticket_and_dispatch_workers"},
+    {"step": 5, "agent": "knowledge", "task": "retrieve_runbooks_cases_legacy"},
+    {"step": 6, "agent": "triage", "task": "rank_risk_level_and_path"},
+    {"step": 7, "agent": "resolution", "task": "build_safe_plan"},
+    {"step": 8, "agent": "approval", "task": "manual_or_skip_per_policy"},
+    {"step": 9, "agent": "resolution", "task": "execute_allowed_actions"},
+    {"step": 10, "agent": "verify", "task": "verify_recovery_and_reflect_kb"},
+    {"step": 11, "agent": "wecom_gateway", "task": "deliver_conclusion_via_app_message_api"}
+  ],
+  "risk_policy": {
+    "auto_execute": ["L0", "L1"],
+    "approval_only": ["L2", "L3"],
+    "human_only": ["L3 强制人工（Agent 仅交付方案，转人工执行与审批）"]
+  }
+}

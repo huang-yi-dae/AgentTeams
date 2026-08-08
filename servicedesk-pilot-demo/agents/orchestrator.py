@@ -3,7 +3,7 @@ Agent 1: TeamLeader —— 任务总控与编排
 
 对应方案 8.1『核心协作流程』，串联端到端九个阶段：
 
-  S1 微信群消息接入      → IM Adapter
+  S1 渠道接入            → WeComChannelGateway(企业微信回调 webhook) + ServiceDeskBot
   S2 事件受理与解析      → Ticket Intake Agent（含去重）
   S3 知识检索            → Knowledge Agent
   S4 风险分诊            → Triage Analyst Agent
@@ -54,10 +54,11 @@ class TeamLeader:
     name = "TeamLeader"
     role = "服务台任务总控与协调者"
 
-    def __init__(self, tracer, policy: Dict[str, Any], im, mcp, kb, approval_adapter):
+    def __init__(self, tracer, policy: Dict[str, Any], gateway, bot, mcp, kb, approval_adapter):
         self.tracer = tracer
         self.policy = policy
-        self.im = im
+        self.gateway = gateway        # 渠道接入网关（企业微信回调 webhook 接收 + 应用消息接口下发）
+        self.bot = bot                # 服务台机器人（渠道接待 + 消息转交）
         self.mcp = mcp
         self.kb = kb
         self.approval = approval_adapter
@@ -76,7 +77,7 @@ class TeamLeader:
 
     def handle_scenario(self, scenario: str) -> Incident:
         t_start = time.time()
-        messages = self.im.fetch_messages(scenario)
+        messages = self.gateway.fetch_messages(scenario)
 
         inc = Incident(incident_id=new_id("INC"), scenario=scenario)
         self.tracer.current_incident = inc.incident_id
@@ -89,18 +90,20 @@ class TeamLeader:
             f"首条消息 {messages[0].timestamp}",
         )
 
-        # ---------------- S1 微信群消息接入 ----------------
-        self.tracer.stage("S1", "微信群消息接入", f"IM Adapter 从『{self.im.channel['chat_name']}』拉取消息")
-        self.tracer.agent(self.name, f"接收 {len(messages)} 条群消息，创建工单 {inc.incident_id}")
-        self.tracer.note(f"渠道 {self.im.channel['type']} | 群 {self.im.channel['chat_id']} "
-                         f"| 群成员 {self.im.channel['member_count']} 人")
-        inc.set_status(TicketStatus.RECEIVED, f"从群 {self.im.channel['chat_id']} 接收")
-        self._reply(inc, f"@{reporter['name']} 收到，已创建工单 {inc.incident_id}，正在分析…")
-        self.tracer.stage_done(f"工单 {inc.incident_id} 已创建，状态 = {inc.status.value}")
+        # ---------------- S1 渠道接入（企业微信回调 webhook 推送）----------------
+        self.tracer.stage("S1", "渠道接入", "企业微信回调 webhook 把群消息推送至服务台后端")
+        self.tracer.note(f"接入面: {self.gateway.channel['type']} | 群 {self.gateway.channel['chat_id']} "
+                         f"| 群成员 {self.gateway.channel['member_count']} 人")
+        self.tracer.note("微信/企微群不能由机器人自由拉取与回复；接收走企业微信回调 webhook 被动推送，"
+                         "下发走应用消息接口主动下发（仿 opspilot at/ 接入面）")
+        inc.set_status(TicketStatus.RECEIVED, f"企业微信回调推送 {self.gateway.channel['chat_id']}")
+        # 服务台机器人渠道接待（礼貌应答 + 转交 Ticket Intake）
+        self.bot.acknowledge(inc.incident_id, reporter['name'])
+        self.tracer.stage_done(f"工单 {inc.incident_id} 已接收，状态 = {inc.status.value}")
 
-        # ---------------- S2 事件受理与解析 ----------------
-        self.tracer.stage("S2", "事件受理与解析", "Ticket Intake Agent 标准化 + 去重 + 分类")
-        merged_into, why = self.intake.run(inc, messages, self.incidents)
+        # ---------------- S2 事件受理与解析（标准化工单）----------------
+        self.tracer.stage("S2", "事件受理与解析", "Ticket Intake Agent 把消息标准化为工单 + 去重 + 分类")
+        merged_into, why = self.intake.run(inc, self.bot.wrap_for_intake(messages), self.incidents)
         if merged_into is not None:
             self._reply(inc, f"@{reporter['name']} 你反馈的问题与工单 {merged_into.incident_id} "
                              f"为同一故障，已合并处理，进度会在群里同步")
@@ -110,6 +113,9 @@ class TeamLeader:
             return inc
 
         cls = inc.classification
+        # 工单标准化完成后，才移交 TeamLeader 编排调度（仿 opspilot：Intake 产出结构化事件 → Leader 接手）
+        self.tracer.agent(self.name, f"接收标准化工单 {inc.incident_id}"
+                                     f"（{cls.category} / 紧急度 {inc.event.urgency}），开始拆解与编排调度")
         self.tracer.stage_done(
             f"标准化完成，分类 = {cls.category} (置信度 {cls.confidence})，状态 = {inc.status.value}")
         self._reply(inc, f"@{reporter['name']} 已识别为「{self._cn(cls.category)}」，正在检索处置方案…")
@@ -365,9 +371,9 @@ class TeamLeader:
     # ======================================================================
 
     def _reply(self, inc: Incident, text: str) -> None:
-        rec = self.im.reply(inc.incident_id, text)
+        reporter_name = inc.raw_messages[0].sender["name"] if inc.raw_messages else ""
+        rec = self.bot.deliver_conclusion(inc.incident_id, text, reporter_name)
         inc.im_replies.append(rec)
-        self.tracer.im("outbound", "ServiceDesk Pilot", text)
 
     def _result_reply(self, inc: Incident, reporter: Dict[str, Any]) -> str:
         v = inc.verification

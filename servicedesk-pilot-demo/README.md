@@ -13,7 +13,7 @@ Mock Adapter 实现。无需 Docker、无需真实企业微信 / 飞书 / 业务
 
 完整覆盖方案的端到端流程：
 
-1. **微信群消息接入** —— IM Adapter 从企业微信群拉取原始报障消息
+1. **渠道接入** —— 企业微信回调 webhook 推送群消息 → 服务台机器人(ServiceDeskBot)接待
 2. **事件解析与去重** —— Ticket Intake Agent 标准化、脱敏、合并同类项
 3. **知识检索** —— Knowledge Agent 检索 Runbook / 历史案例 / 老系统人工经验（带 RAG 命中率）
 4. **风险分诊** —— Triage Analyst 判定 L0–L3 风险等级与执行路径（规则引擎驱动）
@@ -23,8 +23,15 @@ Mock Adapter 实现。无需 Docker、无需真实企业微信 / 飞书 / 业务
 8. **恢复验证** —— Verify Agent 探针校验 + 用户在群内确认
 9. **复盘与知识沉淀** —— Postmortem + KnowledgeReflector **真实写回**知识库
 
+**接入架构（仿 opspilot 接入面）**：真实环境里微信群 / 企微群**不能由机器人自由拉取消息、也不能由群机器人主动回复**。本 Demo 把接入拆成两层，对应 opspilot 的 `at/` 接入面范式：
+
+- **WeComChannelGateway（渠道接入网关）** —— 模拟企业微信「接收消息」回调 webhook（被动推送）把用户消息收到服务台后端；处理后通过「应用消息接口 / 客服消息接口」主动下发进展与结论（而非群机器人单向往外推）。
+- **ServiceDeskBot（服务台机器人）** —— 渠道接待层：收到消息后礼貌应答报障人，并把原始消息打包转交 **Ticket Intake Agent** 标准化为工单。它不解析业务、不决定处置。
+
+链路：**企业微信回调 webhook → 服务台机器人接待 → Ticket Intake 标准化工单 → TeamLeader 调度 → 渠道网关下发结论**。
+
 **状态全程可见、可演示**：终端 ANSI 彩色渲染 + 导出 `trace.json` + 生成亮色主题 HTML 看板
-（九阶段泳道图 / 审批决策卡 / 知识库 diff / 全链路调用链）。
+（九阶段泳道图 / 审批决策卡 / 知识库 diff / 全链路调用链 / 对话式 chat.html）。
 
 ---
 
@@ -140,7 +147,7 @@ servicedesk-pilot-demo/
 │   ├── models.py               # 数据模型：Incident / 枚举 / 上下文 Schema
 │   └── trace.py                # 全链路 Trace 总线（阶段 / Agent / 工具 / IM 事件）
 ├── adapters/
-│   ├── im_adapter.py           # 微信企业群消息 Mock Adapter（唯一输入源）
+│   ├── im_adapter.py           # WeComChannelGateway(渠道接入网关) + ServiceDeskBot(服务台机器人) Mock
 │   ├── mcp_gateway.py          # 统一 MCP 接入层 Mock（业务系统工具调用）
 │   └── approval_adapter.py     # 审批人 Mock（脚本化 / 交互式 / 免审批规则引擎）
 ├── agents/
@@ -165,9 +172,77 @@ servicedesk-pilot-demo/
 
 各 Mock 适配器都按「真实接入复用同一 Schema」设计，替换成本最低：
 
-- `im_adapter.py` → 企业微信 / 飞书 / 钉钉 webhook 事件（Schema 一致）
+- `im_adapter.py` → 企业微信「接收消息」回调 webhook（接收）+「应用消息接口 / 客服消息接口」（下发）；与 opspilot 接入面范式一致，微信/企微群不能由机器人自由收发
 - `mcp_gateway.py` → 真实 MCP Server（VPN 网关 / IDaaS / 邮件 / 代码仓库 / 老系统网关）
 - `approval_adapter.py` → 真实审批中心（保留 `skip_rule_id` 审计痕迹）
 - `knowledge_skills.py` 的 BM25-lite → 真实向量库 RAG
 
 所有 Agent 间传递的上下文都收敛在 `core/models.py` 的 `Incident` 上，与真实接入阶段共用同一套契约。
+
+---
+
+## 10. Docker 服务化运行（分布式 / 真实链路）
+
+Demo 支持两种运行形态，二选一：
+
+| 形态 | 入口 | 适用 |
+|---|---|---|
+| 单进程（默认） | `python run_demo.py` | 本地一键跑全部场景，出 HTML |
+| 服务化（Docker） | `python server.py` + `python sender.py` | 把「消息产生」与「Agent 处理」解耦到两个进程/容器，坐实真实链路 |
+
+服务化形态正好对应方案里的真实链路：**企业微信回调 webhook 被动推送 → 服务台后端处理 → 应用消息接口主动下发**。宿主机（或真实企微回调）只负责把群消息推给容器里的服务，AgentTeams 在容器内完成全部编排。
+
+### 10.1 架构
+
+```
+宿主机 / 企业微信回调                 Docker 容器（servicedesk 镜像）
+┌──────────────────┐  POST /webhook  ┌──────────────────────────────┐
+│  sender.py        │ ──────────────► │  server.py (HTTP :8080)       │
+│  (模拟群消息转发)  │   逐条消息 JSON  │   ├ WeComChannelGateway       │
+│                   │                 │   │  receive_webhook() 注入     │
+│  python sender.py │  POST /run      │   ├ ServiceDeskBot 接待         │
+│   ───────────────►│ ──────────────► │   ├ Ticket Intake 标准化        │
+│                   │   触发全流程     │   ├ TeamLeader 编排→…→Verify    │
+│                   │                 │   └ 导出 out/{trace,chat,...}   │
+└──────────────────┘                 └──────────────────────────────┘
+```
+
+> `WeComChannelGateway.receive_webhook()` 模拟「企业微信接收消息回调」，`fetch_messages()` 取走消息后即触发 Ticket Intake 标准化——与 opspilot 接入面完全对齐。
+
+### 10.2 构建与运行
+
+```bash
+# 在 servicedesk-pilot-demo/ 目录内
+docker build -t servicedesk-pilot .
+docker run -d --name sd -p 8080:8080 servicedesk-pilot
+
+# 或一键（含 ./out 挂载，方便本地看产物）
+docker compose up -d
+```
+
+容器内 `server.py` 监听 `0.0.0.0:8080`，暴露：
+- `POST /webhook` 接收一条群消息（JSON，结构同 `mock/wechat_messages.json` 的 messages[]）
+- `POST /run` 消费所有已推送消息，跑完整 AgentTeams 流程并导出产物
+- `GET /health`、`GET /trace`、`GET /`
+
+### 10.3 宿主机发送模拟消息
+
+```bash
+# 默认发全部场景到 localhost:8080
+python sender.py
+
+# 只发某个场景 / 指定服务地址
+python sender.py --scenario S1_vpn_locked --host 127.0.0.1 --port 8080
+```
+
+sender 会逐条 `POST /webhook`（模拟群里多人发言转发），最后 `POST /run` 触发处理，并打印处置指标与产物路径。产物导出到容器内 `out/`，若用 `docker compose` 则同步挂到宿主机 `./out`，直接浏览器打开 `out/chat.html` 看效果。
+
+### 10.4 手动 curl 验证（等价替换 sender）
+
+```bash
+curl -X POST localhost:8080/webhook \
+  -H 'Content-Type: application/json' \
+  -d '{"msg_id":"m1","scenario":"S1_vpn_locked","timestamp":"2026-08-07T09:12:33+08:00","sender":{"user_id":"u1","name":"张伟","department":"销售一部","title":"销售经理"},"msg_type":"text","content":"@IT 我的VPN登不上了，提示账号已锁定","attachments":[],"mentions":["IT"]}'
+
+curl -X POST localhost:8080/run
+```

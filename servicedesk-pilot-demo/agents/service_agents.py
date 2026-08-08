@@ -51,7 +51,21 @@ class BaseAgent:
 
 class TicketIntakeAgent(BaseAgent):
     name = "Ticket Intake"
-    role = "IM 消息 → 标准化服务台事件（只做标准化与紧急度初判，不决定处置方案）"
+    role = "IM 消息 → 标准化工单（仿 opspilot Alert Intake：噪声消息归并为结构化工单）"
+
+    # 输出契约（仿 opspilot Alert Intake 的 output contract）：
+    # {
+    #   "event_id": "EVT-xxxx",
+    #   "category": "account_locked / mfa_lost / ...",
+    #   "severity": "high / medium / low",            # = NormalizedEvent.urgency
+    #   "reporter": {...},                            # 报障人（来自原始消息）
+    #   "summary": "<脱敏后的工单摘要>",
+    #   "timeline": [{"time": "", "event": "", "evidence_ref": ""}],
+    #   "systems": [...], "symptoms": [...],
+    #   "evidence_refs": [...],                       # 原始消息 + 截图 OCR
+    #   "missing_fields": [...], "identity_factors": [...]
+    # }
+    # 注意：本 Agent 只做标准化与分类，不决定处置方案（DecisionBoundary）。
 
     def __init__(self, tracer, policy: Dict[str, Any]):
         super().__init__(tracer)
@@ -120,6 +134,12 @@ class TicketIntakeAgent(BaseAgent):
             detail={"candidates": cls.candidates, "evidence": cls.evidence_fields},
         )
         inc.set_status(TicketStatus.CLASSIFIED, f"分类 {cls.category}")
+        # 结构化工单输出（仿 opspilot Alert Intake 的 output contract）
+        self.tracer.agent(
+            self.name,
+            f"标准化工单 → {cls.category}(置信度 {cls.confidence}) | 严重度 {event.urgency} "
+            f"| 系统 {event.entities.get('systems') or '未识别'} "
+            f"| 身份因子 {len(event.identity_factors)}")
         return None, ""
 
 
