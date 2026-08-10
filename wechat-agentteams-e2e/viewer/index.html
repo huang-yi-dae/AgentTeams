@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ServiceDesk Pilot — 双视图总览</title>
+<style>
+body{margin:0;font-family:"Microsoft YaHei",sans-serif;background:#f5f5f5;color:#333}
+h1{background:#1a1a2e;color:#fff;margin:0;padding:20px;font-size:20px}
+.card{margin:20px;padding:24px;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.card h2{margin:0 0 8px;font-size:18px}
+.card p{margin:0;color:#666}
+.card a{color:#2563eb;text-decoration:none;font-weight:bold}
+.status{margin:20px;padding:16px;background:#e8f5e9;border-radius:8px;font-family:monospace;white-space:pre-wrap;font-size:13px;max-height:300px;overflow-y:auto}
+</style>
+</head>
+<body>
+<h1>ServiceDesk Pilot — 端到端可观测性</h1>
+<div class="card"><h2><a href="/agentflow.html">视图一：Agent 对话流</a></h2><p>容器内 Manager 拆解、分派、Worker 执行的内部对话流（零 mock）</p></div>
+<div class="card"><h2><a href="/wechat.html">视图二：模拟微信群</a></h2><p>群成员发消息→Agent 处理→服务台回复 的闭环视图（零 mock）</p></div>
+<div class="card"><h2>服务状态</h2><div class="status" id="status">加载中...</div></div>
+<script>
+fetch('/api/status').then(r=>r.json()).then(data=>{
+  document.getElementById('status').textContent=JSON.stringify(data,null,2);
+});
+setInterval(()=>{
+  fetch('/api/status').then(r=>r.json()).then(data=>{
+    document.getElementById('status').textContent=JSON.stringify(data,null,2);
+  });
+},5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent 对话流 · 视图一</title>
+<style>
+body{margin:0;font-family:"Microsoft YaHei",sans-serif;background:#0f0f1a;color:#e0e0e0}
+h1{background:#16162a;padding:16px 20px;margin:0;font-size:18px;border-bottom:1px solid #2a2a4a}
+.events{padding:12px;max-height:calc(100vh - 60px);overflow-y:auto}
+.event{background:#1a1a2e;margin:8px 0;padding:12px;border-radius:6px;border-left:3px solid #3b82f6}
+.event.manager{border-left-color:#f59e0b}
+.event.worker{border-left-color:#10b981}
+.event.admin{border-left-color:#6366f1}
+.event .meta{font-size:11px;color:#888;margin-bottom:4px}
+.event .role{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;margin-left:6px;font-weight:bold}
+.role-manager{background:#f59e0b;color:#000}
+.role-worker{background:#10b981;color:#000}
+.role-admin{background:#6366f1;color:#fff}
+.event .body{font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.empty{padding:40px;text-align:center;color:#666}
+</style>
+</head>
+<body>
+<h1>视图一：Agent 对话流 <span style="font-size:13px;color:#888">（数据来自容器真实 Matrix 事件）</span></h1>
+<div class="events" id="events"><div class="empty">等待事件...</div></div>
+<script>
+let since=0;
+function poll(){fetch('/api/events?since='+since).then(r=>r.json()).then(data=>{
+  if(!data.length)return;
+  const el=document.getElementById('events');
+  if(el.querySelector('.empty'))el.innerHTML='';
+  data.forEach(e=>{if(e.kind==='agent_flow'){const d=document.createElement('div');
+    d.className='event '+e.role;
+    d.innerHTML='<div class="meta">'+e.room_label+' &middot; <span class="role role-'+e.role+'">'+e.role+'</span></div><div class="body">'+e.body+'</div>';
+    el.prepend(d)}});
+  since=data[data.length-1]?.seq||since;
+  el.scrollTop=0;
+});setTimeout(poll,3000);}poll();
+</script>
+</body>
+</html>

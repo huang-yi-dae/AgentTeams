@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模拟微信群 · 视图二</title>
+<style>
+body{margin:0;font-family:"Microsoft YaHei",sans-serif;background:#ededed}
+.header{background:#2e2e2e;color:#fff;padding:12px 16px;text-align:center;font-size:16px;font-weight:bold}
+.chat{padding:12px;max-width:600px;margin:0 auto}
+.msg{display:flex;margin:8px 0}
+.msg.me{flex-direction:row-reverse}
+.msg .bubble{max-width:75%;padding:10px 14px;border-radius:8px;font-size:14px;line-height:1.5;word-break:break-word}
+.msg.me .bubble{background:#95ec69;color:#000}
+.msg.other .bubble{background:#fff;color:#333;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.msg .sender{font-size:11px;color:#888;margin-bottom:2px}
+.msg .name{font-weight:bold;color:#576b95}
+.msg.system .bubble{background:#e0e0e0;color:#666;font-size:12px;text-align:center;max-width:90%}
+.loading{color:#888;font-size:12px;padding:4px 12px}
+.empty{padding:60px 20px;text-align:center;color:#999;font-size:15px}
+</style>
+</head>
+<body>
+<div class="header">微信群-IT服务台支持群</div>
+<div class="chat" id="chat"><div class="empty">等待群消息...</div></div>
+<script>
+const ADMINS=['admin','@admin','系统'];
+let since=0;
+function poll(){fetch('/api/events?since='+since).then(r=>r.json()).then(data=>{
+  if(!data.length)return;
+  const el=document.getElementById('chat');
+  if(el.querySelector('.empty'))el.innerHTML='';
+  data.forEach(e=>{
+    const d=document.createElement('div');
+    if(e.kind==='wechat_inbound'&&e.wechat){
+      d.className='msg other';
+      d.innerHTML='<div class="sender"><span class="name">'+e.wechat.sender+'</span></div><div class="bubble">'+e.wechat.text+'</div>';
+    }else if(e.kind==='wechat_reply'){
+      d.className='msg other';
+      d.innerHTML='<div class="sender"><span class="name">服务台助手</span></div><div class="bubble">'+e.body.replace('[群回复] ','')+'</div>';
+    }
+    el.appendChild(d);
+  });
+  since=data[data.length-1]?.seq||since;
+  el.scrollTop=el.scrollHeight;
+});setTimeout(poll,3000);}poll();
+</script>
+</body>
+</html>
