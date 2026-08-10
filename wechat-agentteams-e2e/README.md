@@ -58,6 +58,19 @@ cd ../simulator && python wechat_sim.py --interval 60  # 推送模拟消息
 | `viewer/*.html` | 三视图 (零 mock) |
 | `prompts/manager-team-prompt.md` | Manager 组队指令 |
 
+## 验证步骤（5 步跑通全链路）
+
+**前置：** 确认 Docker Desktop 已启动且 `docker ps` 显示 `agentteams-controller` 和 `agentteams-manager` 均为 Up。
+
+| 步骤 | 操作 | 验证点 |
+|------|------|--------|
+| 1 | 启动桥接 `python bridge/server.py --port 8770` | 终端显示 `admin login OK` + 找到 `微信群-IT服务台支持群` |
+| 2 | 投喂组队 `python bridge/feed_manager.py --wait 150` | Manager 回复组队完成，`docker ps` 出现 4 个 worker 容器 |
+| 3 | 模拟消息 `python simulator/wechat_sim.py --interval 60 --count 3` | 终端显示每条发送 OK |
+| 4 | 打开 `http://127.0.0.1:8770/wechat.html` | 群消息 → 服务台回复 完整闭环 |
+| 5 | 打开 `http://127.0.0.1:8770/agentflow.html` | Manager 拆解分派 + Worker 执行 真实对话流 |
+| 对照 | Element Web `http://127.0.0.1:18088` (admin/AgentTeams2026) | 与自建视图对照，确认零 mock |
+
 ## 常见问题
 
 - **端口 18080 000**: 设 `.wslconfig` 为 NAT 模式并重启 Docker
