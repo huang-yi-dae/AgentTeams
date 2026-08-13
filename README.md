@@ -1,487 +1,376 @@
-<h1 align="center">
-    <img src="https://img.alicdn.com/imgextra/i3/O1CN01hRhtys1Y3svmSnfhX_!!6000000003004-2-tps-478-472.png" alt="AgentTeams"  width="290" height="290">
-  <br>
-</h1>
+# ServiceDesk Pilot — 微信群消息驱动的 IT 服务台多 Agent 团队
 
-[English](./README.md) | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
+[![demo](https://img.shields.io/badge/demo-end--to--end--red.svg)](#e-运行证据)
+[![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![based on](https://img.shields.io/badge/based%20on-AgentTeams-orange.svg)](https://github.com/agentscope-ai/AgentTeams)
 
-<p align="center">
-  <a href="https://deepwiki.com/agentscope-ai/AgentTeams"><img src="https://img.shields.io/badge/DeepWiki-Ask_AI-navy.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAyCAYAAAAnWDnqAAAAAXNSR0IArs4c6QAAA05JREFUaEPtmUtyEzEQhtWTQyQLHNak2AB7ZnyXZMEjXMGeK/AIi+QuHrMnbChYY7MIh8g01fJoopFb0uhhEqqcbWTp06/uv1saEDv4O3n3dV60RfP947Mm9/SQc0ICFQgzfc4CYZoTPAswgSJCCUJUnAAoRHOAUOcATwbmVLWdGoH//PB8mnKqScAhsD0kYP3j/Yt5LPQe2KvcXmGvRHcDnpxfL2zOYJ1mFwrryWTz0advv1Ut4CJgf5uhDuDj5eUcAUoahrdY/56ebRWeraTjMt/00Sh3UDtjgHtQNHwcRGOC98BJEAEymycmYcWwOprTgcB6VZ5JK5TAJ+fXGLBm3FDAmn6oPPjR4rKCAoJCal2eAiQp2x0vxTPB3ALO2CRkwmDy5WohzBDwSEFKRwPbknEggCPB/imwrycgxX2NzoMCHhPkDwqYMr9tRcP5qNrMZHkVnOjRMWwLCcr8ohBVb1OMjxLwGCvjTikrsBOiA6fNyCrm8V1rP93iVPpwaE+gO0SsWmPiXB+jikdf6SizrT5qKasx5j8ABbHpFTx+vFXp9EnYQmLx02h1QTTrl6eDqxLnGjporxl3NL3agEvXdT0WmEost648sQOYAeJS9Q7bfUVoMGnjo4AZdUMQku50McDcMWcBPvr0SzbTAFDfvJqwLzgxwATnCgnp4wDl6Aa+Ax283gghmj+vj7feE2KBBRMW3FzOpLOADl0Isb5587h/U4gGvkt5v60Z1VLG8BhYjbzRwyQZemwAd6cCR5/XFWLYZRIMpX39AR0tjaGGiGzLVyhse5C9RKC6ai42ppWPKiBagOvaYk8lO7DajerabOZP46Lby5wKjw1HCRx7p9sVMOWGzb/vA1hwiWc6jm3MvQDTogQkiqIhJV0nBQBTU+3okKCFDy9WwferkHjtxib7t3xIUQtHxnIwtx4mpg26/HfwVNVDb4oI9RHmx5WGelRVlrtiw43zboCLaxv46AZeB3IlTkwouebTr1y2NjSpHz68WNFjHvupy3q8TFn3Hos2IAk4Ju5dCo8B3wP7VPr/FGaKiG+T+v+TQqIrOqMTL1VdWV1DdmcbO8KXBz6esmYWYKPwDL5b5FA1a0hwapHiom0r/cKaoqr+27/XcrS5UwSMbQAAAABJRU5ErkJggg==" alt="DeepWiki"></a>
-  <a href="https://discord.com/invite/NVjNA4BAVw"><img src="https://img.shields.io/badge/Discord-Join_Us-blueviolet.svg?logo=discord" alt="Discord"></a>
-</p>
+> **ServiceDesk Pilot** 是面向 20~500 人中小企业的 IT 服务台解决方案。它把微信群里的报障消息，自动转化为多 Agent 团队协作处理的工单，最终以口语化回复回传到群里——员工无需下载任何新软件，IT 同事无需介入中转。
 
-**AgentTeams is an open-source collaborative multi-agent runtime platform. It enables multiple Agents to collaborate in a controlled and auditable room, with full human visibility and intervention capabilities throughout the process.**
+本仓库基于 [AgentTeams](https://github.com/agentscope-ai/AgentTeams) 二次开发，所有运行代码、配置样例、运行证据均在仓库内可重现。
 
-Built on a **Manager-Workers architecture**, AgentTeams features a Manager that centrally orchestrates multiple Workers, focusing on collaboration scenarios between humans and Agents, as well as among Agents within enterprise environments.
+---
 
-AgentTeams does not compete with other Agent runtimes. Instead of implementing Agent logic itself, it orchestrates and manages multiple Agent containers (including the Manager and numerous Workers).
+## 📑 目录
 
-## Key Features
+1. [项目背景与场景](#一项目背景与场景)
+2. [5 秒跑起来](#二5-秒跑起来)
+3. [架构](#三架构)
+4. [目录结构](#四目录结构)
+5. [(a) 运行入口](#a-运行入口)
+6. [(b) 依赖说明](#b-依赖说明)
+7. [(c) 配置样例](#c-配置样例)
+8. [(d) 输入输出](#d-输入输出)
+9. [(e) 运行证据](#e-运行证据)
+10. [进阶使用](#五进阶使用)
+11. [与官方 AgentTeams 的关系](#六与官方-agentteams-的关系)
+12. [致谢与参考](#七致谢与参考)
 
-- 🧬 **Manager-Workers Architecture**: Eliminates the need for human oversight of individual Worker Claws by enabling Agents to manage other Agents.
+---
 
-- 🤝 **Multi-Runtime Collaboration**: OpenClaw, QwenPaw, and Hermes Workers coexist in the same IM room. Use deterministic agents (OpenClaw/QwenPaw) as Leaders to orchestrate tasks, and Hermes Workers for autonomous code execution — each runtime does what it's best at.
+## 一、项目背景与场景
 
-- 📦 **MinIO Shared File System**: Introduces a shared file system for inter-Agent information exchange, significantly reducing token consumption in multi-Agent collaboration scenarios.
+**痛点**：中小企业 IT 通常 1~2 人兼任，员工习惯在微信群里直接报障。常见链路：
 
-- 🔐 **Higress AI Gateway**: Centralizes traffic management and mitigates credential-related risks, alleviating user concerns about security vulnerabilities in the native Lobster framework.
-
-- ☎️ **Element IM Client + Tuwunel IM Server (both Matrix protocol-based)**: Eliminating DingTalk/Lark integration overhead and enterprise approval workflows. Enables rapid user onboarding to experience the "delight" of model services within an IM environment, while maintaining compatibility with native OpenClaw IM integration.
-- 🧬 **Integrate** [AgentLoop](https://www.aliyun.com/product/agentloop?spm=at.readme.0.0.0) ：Provides capabilities such as full-stack Agent observability and auditing, Agent evaluation and experimentation, and Agent asset management and continuous optimization.
-
-## News
-
-- **2026-08-08**: [Release Notes](https://github.com/agentscope-ai/AgentTeams/releases/tag/v1.2.2) — AgentTeams v1.2.2: adds Manager-to-Worker custom Skill delivery with validation, storage upload, `Worker.spec.skills` assignment, and QwenPaw hot refresh and enablement without a restart; hardens Manager and Worker Skill loading; and ensures Team Leaders and Workers explicitly join Team Rooms after invitation.
-- **2026-08-06**: [Release Notes](https://github.com/agentscope-ai/AgentTeams/releases/tag/v1.2.1) — AgentTeams v1.2.1: unifies the Manager and Worker runtime stack on QwenPaw 2.0.1, publishes the QwenPaw Worker multi-architecture image, strengthens atomic Matrix and TeamHarness task assignment and CoPaw-to-QwenPaw state migration, adds custom model vision and reasoning capability overrides, and improves Worker lifecycle and runtime management reliability.
-- **2026-07-30**: [Release Notes](https://github.com/agentscope-ai/AgentTeams/releases/tag/v1.2.0) — AgentTeams v1.2.0 (stable): establishes AgentTeams naming and the final Team/Worker resource contracts end to end; adds the optional AgentTeams Dashboard; and improves Worker storage sync, Team routing and lifecycle convergence, installer support for deploying v1.1.2 with its legacy environment and storage contract (earlier releases still require the matching legacy installer), Dashboard reliability, and tooling and diagnostic safety.
-- **2026-07-17**: [Release Notes](https://github.com/agentscope-ai/AgentTeams/releases/tag/v1.2.0-beta.1) — AgentTeams v1.2.0-beta.1 (prerelease): completes the public rename from the retired predecessor across images, Kubernetes APIs, Helm, Matrix, storage, and runtime contracts; adds the plugin platform, TeamHarness and WorkerFlow integrations, Matrix AppService and Human SSO, model-provider routing and LLM preflight, plus richer controller observability. Beta installation requires explicit opt-in, while the stable default remains v1.1.2.
-- **2026-05-27**: [Release Notes](https://github.com/agentscope-ai/AgentTeams/releases/tag/v1.1.2) — AgentTeams v1.1.2: QwenPaw-first installer with keep-all upgrade flow, Team human coordinators and refreshed Team Leader coordination tools, Nacos remote skills with `sts-agentteams` / `ai-registry` STS scope, Worker CR-name decoupled from runtime name, controller reconcile metrics and graceful shutdown.
-- **2026-05-07**: [Release Notes](https://github.com/agentscope-ai/AgentTeams/releases/tag/v1.1.1) | [Changelog](changelog/v1.1.1.md) — AgentTeams v1.1.1: declarative MCP on Worker/Manager/Team CRDs (breaking) and on Team Leader, custom `spec.env` for CRs, Token Plan + Qwen Cloud international + `qwen3.6-plus`, namespace-scoped controller RBAC, optional `SOUL.md` in Worker packages.
-- **2026-04-24**: [English](blog/agentteams-1.1.0-release.md) | [中文](blog/zh-cn/agentteams-1.1.0-release.md) — AgentTeams v1.1.0: Kubernetes-native control plane, Hermes autonomous coding agent runtime, 1.7 GB image shrink, agt CLI replaces shell scripts.
-- **2026-04-14**: [English](blog/agentteams-k8s-native-multi-agent-collaboration.md) | [中文](blog/zh-cn/agentteams-k8s-native-multi-agent-collaboration.zh-CN.md) — Deep dive: AgentTeams as a Kubernetes-native multi-agent collaboration orchestration system.
-- **2026-04-03**: [English](docs/declarative-resource-management.md) | [中文](docs/zh-cn/declarative-resource-management.md) — AgentTeams 1.0.9: Kubernetes-style declarative resource management (YAML for Worker, Team, Human); Worker Template Marketplace; Manager QwenPaw runtime; Nacos Skills Registry and more.
-- **2026-03-14**: [English](blog/agentteams-1.0.6-release.md) | [中文](blog/zh-cn/agentteams-1.0.6-release.md) — AgentTeams 1.0.6: enterprise-grade MCP Server management, zero credential exposure.
-- **2026-03-10**: [English](blog/agentteams-1.0.4-release.md) | [中文](blog/zh-cn/agentteams-1.0.4-release.md) — AgentTeams 1.0.4: QwenPaw (formerly CoPaw) Worker support, 80% less memory.
-- **2026-03-04**: [English](blog/agentteams-announcement.md) | [中文](blog/zh-cn/agentteams-announcement.md) — AgentTeams open sourced under its former name.
-
-## Why AgentTeams
-
-- **Enterprise-Grade Security**: Worker Agents operate with consumer tokens only. Real credentials (API keys, GitHub PATs) stay in the gateway — Workers can't see them, and neither can attackers.
-
-- **Fully Private**: Matrix is a decentralized, open protocol. Host it yourself, federate with others if you want. No vendor lock-in, no data harvesting.
-
-- **Human-in-the-Loop by Default**: Every Matrix room includes you, the Manager, and the relevant Workers. Watch everything. Jump in anytime. No black boxes.
-
-- **Zero Configuration IM**: Built-in Matrix server means no bot applications, no API approvals, no waiting. Just open Element Web and start chatting.
-
-- **One Command Setup**: `curl | bash` and you're done — AI gateway, Matrix server, file storage, web client, and Manager Agent.
-
-- **Skills Ecosystem**: Workers pull from [skills.sh](https://skills.sh) (80,000+ community skills) on demand. Safe because Workers can't access real credentials.
-
-## Quick Start
-
-**Prerequisites**: Docker Desktop (Windows/macOS) or Docker Engine (Linux).
-
-**Resources**: 2 CPU cores + 4 GB RAM minimum. For multiple Workers, 4 cores + 8 GB recommended.
-
-### Install
-
-**macOS / Linux:**
-```bash
-bash <(curl -sSL https://raw.githubusercontent.com/agentscope-ai/AgentTeams/main/install/agentteams-install.sh)
+```
+员工在微信群发消息 → IT 同学肉眼看到 → 凭经验判断 → 手动操作 → 群里回复
 ```
 
-**Windows (PowerShell 7+ recommended):**
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; $wc=New-Object Net.WebClient; $wc.Encoding=[Text.Encoding]::UTF8; iex $wc.DownloadString('https://raw.githubusercontent.com/agentscope-ai/AgentTeams/main/install/agentteams-install.ps1')
+问题：响应慢、易遗漏、过程无记录、复杂故障跨系统查询耗时。
+
+**ServiceDesk Pilot 的解法**：
+
+```
+员工在微信群发消息 ─┐
+                   ├─→ Bridge 适配层 ─→ Matrix 房间 ─→ Manager Agent
+                   │                                       ├─→ Ticket Intake
+IT 同学可继续介入  ─┘                                       ├─→ Triage Analyst
+                   ↑                                       ├─→ Resolution
+                   │                                       └─→ Verify
+                   └──────────── [群回复] ←───────────────────┘
 ```
 
-The installer walks you through:
-1. Choose your LLM provider (OpenAI-compatible APIs supported)
-2. Enter your API key
-3. Select network mode (local-only or external access)
-4. Wait for setup to complete
+服务台 Agent 团队 4 个角色：
 
-### Access
-
-Open http://127.0.0.1:18088 in your browser and log in to Element Web. The Manager will greet you and explain how to create your first Worker.
-
-**Mobile**: Use any Matrix client (Element, FluffyChat) and connect to your server address.
-
-**That's it.** No bot applications. No external services. Your AI team runs entirely on your machine.
-
-## Upgrade
-
-```bash
-# Upgrade to latest (preserves all data)
-bash <(curl -sSL https://raw.githubusercontent.com/agentscope-ai/AgentTeams/main/install/agentteams-install.sh)
-
-# Upgrade to specific version
-AGENTTEAMS_VERSION=v1.0.5 bash <(curl -sSL https://raw.githubusercontent.com/agentscope-ai/AgentTeams/main/install/agentteams-install.sh)
-```
-
-## Uninstall
-
-**macOS / Linux:**
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/agentscope-ai/AgentTeams/main/install/agentteams-install.sh) uninstall
-```
-
-**Windows (PowerShell):**
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; $wc=New-Object Net.WebClient; $wc.Encoding=[Text.Encoding]::UTF8; $s=$wc.DownloadString('https://raw.githubusercontent.com/agentscope-ai/AgentTeams/main/install/agentteams-install.ps1'); & ([scriptblock]::Create($s)) uninstall
-```
-
-This removes all AgentTeams containers (Manager, Workers, docker-proxy), Docker volume, network, env file, workspace directory, and install log.
-
-## Install on Kubernetes (Helm)
-
-For shared / production deployments you can install AgentTeams on any Kubernetes cluster via the official Helm chart. The default profile bundles the Higress AI gateway, Tuwunel (Matrix), MinIO and the AgentTeams controller — no external dependencies required.
-
-**Prerequisites**
-
-- Kubernetes 1.24+ (kind / minikube / k3s / managed K8s — all work)
-- Helm 3.7+
-- A default StorageClass (for the Tuwunel + MinIO PVCs)
-
-**Install (OpenAI / OpenAI-compatible)**
-
-```bash
-helm repo add higress.io https://higress.io/helm-charts
-helm repo update
-
-helm install agentteams higress.io/agentteams \
-  -n agentteams-system --create-namespace \
-  --render-subchart-notes \
-  --set credentials.llmApiKey=<your-api-key> \
-  --set credentials.adminPassword=<your-admin-password> \
-  --set gateway.publicURL=http://localhost:18080
-```
-
-For non-OpenAI providers that expose an OpenAI-compatible API, also set `llmBaseUrl`:
-
-```bash
-helm install agentteams higress.io/agentteams \
-  -n agentteams-system --create-namespace \
-  --render-subchart-notes \
-  --set credentials.llmApiKey=<your-api-key> \
-  --set credentials.llmBaseUrl=https://your-provider.example.com/v1 \
-  --set credentials.defaultModel=your-model-name \
-  --set credentials.adminPassword=<your-admin-password> \
-  --set gateway.publicURL=http://localhost:18080
-```
-
-<details>
-<summary>Using Qwen (通义千问) instead</summary>
-
-```bash
-helm install agentteams higress.io/agentteams \
-  -n agentteams-system --create-namespace \
-  --render-subchart-notes \
-  --set credentials.llmApiKey=<your-qwen-api-key> \
-  --set credentials.llmProvider=qwen \
-  --set credentials.defaultModel=qwen3.5-plus \
-  --set credentials.adminPassword=<your-admin-password> \
-  --set gateway.publicURL=http://localhost:18080
-```
-
-</details>
-
-| Value | Required | Description |
-|---|---|---|
-| `credentials.llmApiKey` | yes | API key for your LLM provider |
-| `gateway.publicURL` | yes | Public URL where users will reach Element Web (e.g. `http://localhost:18080` for port-forward, or `https://agentteams.example.com` for an Ingress) |
-| `credentials.adminPassword` | recommended | Matrix admin password; auto-generated if left empty (you'll have to read it back from the Secret) |
-| `credentials.llmProvider` | no | LLM provider name, defaults to `openai-compat` |
-| `credentials.defaultModel` | no | Default model, defaults to `gpt-5.4` |
-| `credentials.llmBaseUrl` | no | OpenAI-compatible base URL (e.g. `https://api.deepseek.com/v1`). Leave empty for official OpenAI API |
-| `preflight.llm.enabled` | no | Run an install/upgrade hook that validates the LLM API key, base URL, and model before the controller starts. Defaults to `true` |
-| `preflight.llm.strict` | no | Fail the Helm install/upgrade when the LLM preflight fails. Defaults to `true`; set to `false` to emit a warning and continue |
-| `preflight.llm.timeoutSeconds` | no | Per-request timeout for the LLM preflight HTTP probe. Defaults to `30` |
-| `preflight.llm.retries` | no | Retry count for transient LLM preflight failures such as rate limits and provider 5xx responses. Defaults to `2` |
-| `preflight.llm.activeDeadlineSeconds` | no | Kubernetes Job active deadline for the preflight hook. Defaults to `120` |
-| `preflight.llm.resources` | no | Optional Kubernetes resource requests/limits for the preflight hook container |
-| `manager.runtime` | no | Manager agent runtime: `openclaw` (default), `copaw`, or `hermes` |
-| `worker.defaultRuntime` | no | Default Worker runtime: `openclaw` (default), `copaw`, or `hermes` |
-
-Helm installs run an LLM preflight hook by default. The hook sends a minimal OpenAI-compatible `/chat/completions` request using `credentials.llmApiKey`, `credentials.llmBaseUrl`, and `credentials.defaultModel`; invalid keys, unreachable base URLs, unsupported models, quota errors, and provider outages fail the install before the controller starts. To bypass this check for restricted or offline clusters:
-
-```bash
-helm install agentteams higress.io/agentteams \
-  -n agentteams-system --create-namespace \
-  --set credentials.llmApiKey=<your-api-key> \
-  --set credentials.adminPassword=<your-admin-password> \
-  --set gateway.publicURL=http://localhost:18080 \
-  --set preflight.llm.enabled=false
-```
-
-<details>
-<summary>Using alternative runtimes (QwenPaw Manager + Hermes Workers)</summary>
-
-```bash
-helm install agentteams higress.io/agentteams \
-  -n agentteams-system --create-namespace --devel \
-  --set manager.runtime=copaw \
-  --set worker.defaultRuntime=hermes \
-  --set credentials.llmApiKey=<your-api-key> \
-  --set credentials.llmBaseUrl=https://your-provider.example.com/v1 \
-  --set credentials.defaultModel=your-model-name \
-  --set credentials.adminPassword=<your-admin-password> \
-  --set gateway.publicURL=http://localhost:18080
-```
-
-The image for each component is automatically selected based on the runtime (`agentteams-manager` / `agentteams-manager-qwenpaw` for Manager; `agentteams-worker` / `agentteams-copaw-worker` / `agentteams-hermes-worker` for Workers).
-
-</details>
-
-**Multi-Region Image Registry**
-
-The default `global.imageRegistry` points to the China region (`higress-registry.cn-hangzhou.cr.aliyuncs.com/higress`). If you are deploying outside China, override it for faster image pulls:
-
-| Region | Registry |
+| Worker | 职责 |
 |---|---|
-| China (default) | `higress-registry.cn-hangzhou.cr.aliyuncs.com/higress` |
-| North America | `higress-registry.us-west-1.cr.aliyuncs.com/higress` |
-| Southeast Asia | `higress-registry.ap-southeast-7.cr.aliyuncs.com/higress` |
+| **Ticket Intake** | 拆解消息、建工单、抽取实体（人/账号/系统/时间） |
+| **Triage Analyst** | 判断类别（账号/网络/设备）、严重度、影响面、决定要不要升级 |
+| **Resolution** | 给出可执行修复步骤或具体操作建议 |
+| **Verify** | 复核处置是否真正解决、是否需二次确认 |
+
+Manager 收到 `[群回复]` 后回传到群内，员工得到口语化答复。
+
+---
+
+## 二、5 秒跑起来
 
 ```bash
-# Example: deploy from the North America registry
-helm install agentteams higress.io/agentteams \
-  -n agentteams-system --create-namespace \
-  --render-subchart-notes \
-  --set global.imageRegistry=higress-registry.us-west-1.cr.aliyuncs.com/higress \
-  --set credentials.llmApiKey=<your-api-key> \
-  --set credentials.adminPassword=<your-admin-password> \
-  --set gateway.publicURL=http://localhost:18080
+# 0. 准备 .env
+cd wechat-agentteams-e2e
+cp .env.example .env
+# 编辑 .env，至少填入 AGENTTEAMS_LLM_API_KEY 与 AGENTTEAMS_ADMIN_PASSWORD
+
+# 1. 启动 controller 容器（约 2 分钟）
+./start.sh controller
+
+# 2. 另开一个终端，启动宿主机桥接服务
+./start.sh bridge
+
+# 3. 浏览器打开观察页面
+./start.sh viewer
+
+# 4. 另开第三个终端，投喂 Manager 组队指令
+./start.sh feed
+
+# ⚠️ Windows PowerShell 5.1 用户注意: bridge 重定向用 `> file 2>&1`
+#    不要用 `*> file` (这是 PowerShell 7+ 语法, PS 5.1 不支持)
+
+# 5. 推送 6 条模拟微信群消息
+./start.sh simulate
 ```
 
-For all configurable values (gateway/storage providers, image tags, resources, persistence, etc.) see [`helm/agentteams/values.yaml`](helm/agentteams/values.yaml).
+完整演示流程见 [docs/RUNBOOK.md](docs/RUNBOOK.md)。
 
-**Access**
+---
 
-For a temporary local admin session, forward the Higress Gateway:
-
-```bash
-kubectl port-forward -n agentteams-system svc/higress-gateway 18080:80
-```
-
-Then open http://localhost:18080 and log in to Element Web. The port-forward
-ends when the command exits and is not suitable for shared access.
-
-For company or Internet access, expose only `svc/higress-gateway` through an
-HTTPS Ingress or LoadBalancer. `gateway.publicURL` is written into the Element
-Web configuration as its Matrix homeserver URL, so it must exactly match the
-public origin that users open (for example, `https://agentteams.example.com`).
-
-1. Point the public DNS name at your Ingress controller or load balancer.
-2. Provision a TLS certificate Secret in `agentteams-system`.
-3. Set the same origin on the Helm release:
-
-```bash
-helm upgrade agentteams higress.io/agentteams \
-  -n agentteams-system --reuse-values \
-  --set gateway.publicURL=https://agentteams.example.com
-```
-
-4. Route that host to the Higress Gateway. This generic example assumes an
-   NGINX IngressClass and an existing `agentteams-tls` Secret; replace both to
-   match your cluster:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: agentteams
-  namespace: agentteams-system
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - agentteams.example.com
-      secretName: agentteams-tls
-  rules:
-    - host: agentteams.example.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: higress-gateway
-                port:
-                  number: 80
-```
-
-Verify both the web entry point and Matrix routing after DNS and TLS are ready:
-
-```bash
-curl -fsSI https://agentteams.example.com/
-curl -fsS https://agentteams.example.com/_matrix/client/versions
-```
-
-Keep the controller API, Tuwunel, MinIO, and the Higress Console private unless
-you apply separate authentication and network policy. Use HTTPS for shared
-access because Matrix login credentials and access tokens pass through this
-endpoint. A `LoadBalancer` Service can replace the Ingress, but the DNS, TLS,
-and `gateway.publicURL` requirements remain the same.
-
-**Upgrade**
-
-```bash
-helm repo update
-helm upgrade agentteams higress.io/agentteams -n agentteams-system --reuse-values
-```
-
-**Uninstall**
-
-```bash
-helm uninstall agentteams -n agentteams-system
-kubectl delete namespace agentteams-system
-```
-
-For the Kubernetes-native architecture (CRDs, controller, declarative `Worker` / `Team` / `Human` resources), see [docs/k8s-native-agent-orch.md](docs/k8s-native-agent-orch.md).
-
-## How It Works
-
-### Manager as Your AI Chief of Staff
+## 三、架构
 
 ```
-You: Create a Worker named alice for frontend development
-
-Manager: Done. Worker alice is ready.
-         Room: Worker: Alice
-         Tell alice what to build.
-
-You: @alice implement a login page with React
-
-Alice: On it... [a few minutes later]
-       Done. PR submitted: https://github.com/xxx/pull/1
+┌─────────────────────────────────────────────────────────────┐
+│                       宿主 机（Windows / WSL）                  │
+│                                                              │
+│   ┌──────────────────┐    HTTP    ┌───────────────────────┐  │
+│   │  Simulator       │ ─────────→ │  Bridge (Python)       │  │
+│   │  wechat_sim.py   │   /api/    │  matrix_client.py     │  │
+│   │  messages.json   │   send     │  server.py :8770      │  │
+│   └──────────────────┘            └─────────┬─────────────┘  │
+│                                               │ Matrix C-S    │
+│   ┌──────────────────┐    HTTP    ┌──────────▼─────────────┐  │
+│   │  Viewer (HTML)   │ ←──────── │  Browser (3 个页面)     │  │
+│   │  wechat.html     │   /api/    │  index / agentflow /   │  │
+│   │  agentflow.html  │   events   │  wechat                │  │
+│   └──────────────────┘            └───────────────────────┘  │
+└────────────────────────────┬────────────────────────────────┘
+                             │ Docker 端口映射
+                             │ 18080 / 18001 / 18088 / 6167
+┌────────────────────────────▼────────────────────────────────┐
+│             agentteams-controller 容器 (Docker)                │
+│                                                              │
+│   ┌────────────┐    ┌────────────┐    ┌──────────────────┐  │
+│   │  Tuwunel   │    │  Higress   │    │  Manager Agent   │  │
+│   │  Matrix    │◄──►│  Gateway   │◄──►│  ServiceDesk      │  │
+│   │  :6167     │    │  :8080     │    │  Pilot            │  │
+│   └────────────┘    └────────────┘    └────────┬─────────┘  │
+│                              ▲                 │ worker-mgmt │
+│                              │                 ▼             │
+│                         ┌────┴────┐    ┌──────────────────┐  │
+│                         │  MinIO  │    │  Worker Agents    │  │
+│                         │  (FS)   │    │  Intake/Triage/   │  │
+│                         └─────────┘    │  Resolution/Verify │  │
+│                                       └──────────────────┘  │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-<p align="center">
-  <img src="https://img.alicdn.com/imgextra/i4/O1CN01wHWaJQ29KV3j5vryD_!!6000000008049-0-tps-589-1280.jpg" width="240" />
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="https://img.alicdn.com/imgextra/i2/O1CN01q9L67J245mFT0fPXH_!!6000000007340-0-tps-589-1280.jpg" width="240" />
-</p>
-<p align="center">
-  <sub>① Manager creates a Worker and assigns tasks</sub>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <sub>② You can also direct Workers directly in the room</sub>
-</p>
+**关键设计：Bridge 不实现 Agent 逻辑**——它只是把微信群消息包络转成 Matrix 房间里的标准消息，再把 Manager 回的 `[群回复]` 暴露给浏览器。所有"理解 / 拆解 / 分派"都发生在容器内的 Agent 团队里。
 
-### Security Model
+---
+
+## 四、目录结构
 
 ```
-Worker (consumer token only)
-    → Higress AI Gateway (holds real API keys, GitHub PAT)
-        → LLM API / GitHub API / MCP Servers
+AgentTeams/                           ← 本仓库根目录
+├── README.md                          ← 本文件（比赛提交版）
+├── AGENTS.md                          ← AgentTeams 官方导航
+├── LICENSE                            ← Apache 2.0
+├── wechat-agentteams-e2e/             ← ServiceDesk Pilot 演示入口
+│   ├── start.sh                       ← 一键启动入口
+│   ├── .env.example                   ← 配置样例
+│   ├── _recreate_controller.sh        ← 跨平台容器启动脚本
+│   ├── README.md                      ← 本目录内部说明
+│   ├── bridge/                        ← 宿主机桥接服务（IM 适配层）
+│   │   ├── server.py                  ← HTTP API + Matrix sync
+│   │   ├── matrix_client.py           ← Matrix C-S API 客户端
+│   │   └── feed_manager.py            ← admin → @manager DM 投喂工具
+│   ├── simulator/                     ← 微信群消息模拟器
+│   │   ├── wechat_sim.py              ← 推送脚本
+│   │   └── messages.json              ← 6 个真实 IT 服务台场景
+│   ├── viewer/                        ← 浏览器观察页面（零依赖纯 HTML）
+│   │   ├── index.html                 ← 总览
+│   │   ├── agentflow.html             ← 视图一：Agent 对话流
+│   │   └── wechat.html                ← 视图二：模拟微信群
+│   ├── prompts/
+│   │   └── manager-team-prompt.md     ← 投喂给 Manager 的系统级组队指令
+│   └── presentaion/                       ← 参赛 PPT
+├── docs/
+│   ├── RUNBOOK.md                     ← 详细运行手册
+│   ├── evidence/                      ← 运行证据（截图 + 日志）
+│   └── archive/                       ← 原 AgentTeams 官方 README 多语言版本
+├── agentteams-controller/             ← Go operator 源码（fork 自官方）
+├── manager/  worker/  copaw/  ...    ← AgentTeams 各组件（fork 自官方）
+└── plugins/                           ← AgentTeams 官方 plugin 框架
 ```
 
-Workers see only their consumer token. The gateway handles all real credentials. The Manager knows what Workers are doing but never touches the actual keys.
+---
 
-### Human in the Loop
+## 五、比赛提交材料
 
-Every Matrix Room includes you, the Manager, and relevant Workers:
+### (a) 运行入口
 
-```
-You: @bob wait, change the password rule to minimum 8 chars
-Bob: Got it, updated.
-Alice: Frontend validation updated too.
-```
+**统一入口**：`wechat-agentteams-e2e/start.sh`
 
-No hidden agent-to-agent calls. Everything is visible and intervenable.
-
-## Multi-Runtime Collaboration
-
-AgentTeams supports three Worker runtimes that can **coexist in the same IM room**, collaborating on tasks together:
-
-- **OpenClaw** (Node.js) — General-purpose agent with rich skills ecosystem, ideal for task orchestration and tool calling
-- **QwenPaw** (Python) — Lightweight runtime, suited for browser automation and quick tasks
-- **Hermes** ([hermes-agent](https://github.com/NousResearch/hermes-agent)) — Autonomous coding agent with terminal sandbox, self-improving skills, and persistent memory
-
-Each runtime excels at different tasks. A common pattern: use deterministic agents (OpenClaw/QwenPaw) as Leaders to decompose and assign work, and Hermes Workers for autonomous code execution. All runtimes communicate via Matrix `m.mentions` in the same room — fully visible, fully intervenable.
-
-```bash
-# Switch any worker's runtime in place
-agt update worker --runtime hermes
-```
-
-## Architecture
-
-```
-┌───────────────────────────────────────────────┐
-│            agentteams-controller                  │
-│  Higress │ Tuwunel │ MinIO │ Element Web      │
-└──────────────────┬────────────────────────────┘
-                   │ Matrix + HTTP Files
-┌──────────────────┴──────────┐
-│     agentteams-manager-agent     │
-│     Manager (OpenClaw/       │
-│       QwenPaw)               │
-└──────────────────┬──────────┘
-                   │
-┌──────────────────┼────────────────────────────┐
-│                  │                            │
-▼                  ▼                            ▼
-Worker Alice    Worker Bob              Worker Charlie
-(OpenClaw)      (QwenPaw)               (Hermes)
-```
-
-| Component | Role |
-|-----------|------|
-| agentteams-controller | Kubernetes-native control plane, reconciles Worker/Team/Manager CRs |
-| Higress AI Gateway | LLM proxy, MCP Server hosting, credential management |
-| Tuwunel (Matrix) | Self-hosted IM server for all Agent + Human communication |
-| Element Web | Browser client, zero setup |
-| MinIO | Centralized file storage, Workers are stateless |
-
-## AgentTeams vs OpenClaw Native
-
-| | OpenClaw Native | AgentTeams |
+| 命令 | 作用 | 推荐演示角色 |
 |---|---|---|
-| Deployment | Single process | Distributed containers |
-| Agent creation | Manual config + restart | Conversational |
-| Credentials | Each agent holds real keys | Workers only hold consumer tokens |
-| Human visibility | Optional | Built-in (Matrix Rooms) |
-| Mobile access | Depends on channel setup | Any Matrix client, zero config |
-| Monitoring | None | Manager heartbeat, visible in Room |
+| `./start.sh controller` | 启动 agentteams-embedded 容器（含 Matrix、Manager、Workers） | 一次性，约 2 分钟 |
+| `./start.sh bridge` | 在宿主机启动 Python 桥接服务（端口 8770） | 常驻进程 |
+| `./start.sh viewer` | 打印浏览器观察链接（可自动打开默认浏览器） | 演示时 |
+| `./start.sh simulate` | 推送 6 条模拟微信群消息 | 演示时，一次性 |
+| `./start.sh feed` | 把 Manager 组队指令投喂到 @manager DM | 演示前一次性 |
+| `./start.sh all` | 依次执行上述全部步骤 | 一键全跑 |
 
-## Documentation
+**为什么这样组织**：ServiceDesk Pilot 是"容器内 Agent 团队"+"宿主机 IM 适配"双层架构。`start.sh` 把这两层封装成 3 个进程（controller / bridge / simulator），符合 SRE 与演示场景对"分层可控、易排障"的要求。
 
-| | |
+### (b) 依赖说明
+
+| 依赖 | 版本要求 | 用途 |
+|---|---|---|
+| **Docker** | Docker Desktop 4.x（Windows/macOS）或 Docker Engine 24+（Linux） | 运行 agentteams-embedded 容器 |
+| **Python** | 3.7+ | 运行桥接服务与模拟器（**仅用标准库，零 pip install**） |
+| **LLM API Key** | openai-compat 格式（已验证 StepFun step-3.7-flash，可换 Qwen / OpenAI 等） | Manager/Worker 推理 |
+| **宿主机资源** | 2 CPU + 4 GB RAM 最低；多 Worker 建议 4 CPU + 8 GB | 容器与 Worker 并发 |
+
+**关键依赖原则**：bridge / simulator / viewer 三个 Python/HTML 组件**不引入任何第三方依赖**。原因：
+1. 让评审 clone 仓库即可运行，无需 `pip install`
+2. 桥接服务是"薄适配层"，标准库足够
+3. 评审容器/沙盒环境通常不能联网装包
+
+### (c) 配置样例
+
+完整配置样例见 [`wechat-agentteams-e2e/.env.example`](wechat-agentteams-e2e/.env.example)。
+
+```bash
+# LLM Provider (容器内 Manager / Worker 使用)
+AGENTTEAMS_LLM_PROVIDER=openai-compat
+AGENTTEAMS_DEFAULT_MODEL=step-3.7-flash
+AGENTTEAMS_LLM_API_KEY=<replace-with-your-openai-compat-key>
+AGENTTEAMS_OPENAI_BASE_URL=https://api.stepfun.com/step_plan/v1
+
+# Matrix admin (容器与宿主机 bridge 共用)
+AGENTTEAMS_ADMIN_USER=admin
+AGENTTEAMS_ADMIN_PASSWORD=AgentTeams2026
+
+# 端口与域名
+AGENTTEAMS_PORT_GATEWAY=18080
+AGENTTEAMS_MATRIX_DOMAIN=matrix-local.agentteams.io:18080
+
+# Runtime & locale
+AGENTTEAMS_MANAGER_RUNTIME=copaw
+AGENTTEAMS_LANGUAGE=zh
+TZ=Asia/Shanghai
+```
+
+**首次使用**：
+
+```bash
+cd wechat-agentteams-e2e
+cp .env.example .env
+vi .env   # 填入真实 AGENTTEAMS_LLM_API_KEY
+```
+
+`.env` 在 `.gitignore` 中，不会被提交。
+
+**`~/agentteams-manager.env`**：由容器启动后自动生成到用户 home 目录，包含 admin password 与 Matrix 端口。宿主机 bridge 启动时通过 `--env-file` 读取它。
+
+### (d) 输入输出
+
+**输入**：6 个真实 IT 服务台场景（见 [`wechat-agentteams-e2e/simulator/messages.json`](wechat-agentteams-e2e/simulator/messages.json)）
+
+| # | 场景 | 报障人 | 类别 |
+|---|---|---|---|
+| 1 | 离职员工 OA / 钉钉账号未禁用 | 张号(技术部) | 账号生命周期 |
+| 2 | 新员工 VPN 登录失败 | 王芳(HR) | 账号开通 |
+| 3 | 二次验证手机号变更 | 刘强(销售部) | MFA |
+| 4 | 密码过期无法重置 | 陈丽(财务部) | 密码/邮件 |
+| 5 | 内网 GitLab 403 Forbidden | 马超(研发部) | 网络/权限 |
+| 6 | 三台新打印机网络配置 | 杨雪(行政部) | 设备（非账户类） |
+
+**包络格式**（Bridge 识别的群消息约定）：
+
+```
+[微信群消息] 群: <群名> | 成员: <报障人> | 消息ID: <唯一ID> | 时间: <时间戳>
+内容: <原始报障文本>
+```
+
+**处理流程**：
+
+```
+微信群 ──包络──> Bridge ──> Matrix 房间 ──> Manager
+                                              ├─ Ticket Intake 拆解实体，建 ticket_id
+                                              ├─ Triage Analyst 判定类别/严重度
+                                              ├─ Resolution 给具体修复步骤
+                                              └─ Verify 复核
+                                          <─ [群回复] 汇总
+微信群 <─包络── Bridge <── "群回复" <──── Manager
+```
+
+**输出**：
+
+- **视图一 Agent 对话流**：实时显示 Manager/Worker 之间的对话（来自 Matrix 真实事件）
+- **视图二 模拟微信群**：以微信 UI 风格还原员工报障 → 服务台回复
+- **bridge stdout 日志**：每个事件的序列号、时间戳、发送者、事件 ID
+
+### (e) 运行证据
+
+证据存放于 [`docs/evidence/`](docs/evidence/)：
+
+| 文件 | 内容 |
 |---|---|
-| [docs/quickstart.md](docs/quickstart.md) | Step-by-step guide |
-| [docs/architecture.md](docs/architecture.md) | System architecture deep dive |
-| [docs/manager-guide.md](docs/manager-guide.md) | Manager configuration |
-| [docs/worker-guide.md](docs/worker-guide.md) | Worker deployment |
-| [docs/development.md](docs/development.md) | Contributing and local dev |
+| `bridge.log` | 宿主机桥接服务的完整 stdout（含 6 轮"收消息 → 拆解 → 派发 → 回复"日志） |
+| `viewer-index.png` | 总览页面截图 |
+| `viewer-agentflow.png` | Agent 对话流页面截图 |
+| `viewer-wechat.png` | 模拟微信群页面截图 |
+| `container-logs.txt` | `docker logs agentteams-controller` 末尾 200 行 |
 
-## Troubleshooting
-
-```bash
-docker exec -it agentteams-manager cat /var/log/agentteams/manager-agent.log
-```
-
-See [docs/zh-cn/faq.md](docs/zh-cn/faq.md) for common issues.
-
-### Reporting Bugs
-
-Export your Matrix message logs and let an AI tool analyze them against the codebase before filing an issue — this helps us fix bugs much faster.
+**复现步骤**（评审可独立验证）：
 
 ```bash
-# Export debug logs (Matrix messages + agent sessions, PII auto-redacted)
-python scripts/export-debug-log.py --range 1h
+# 1. 启动 demo
+cd wechat-agentteams-e2e
+./start.sh controller
+./start.sh bridge &
+./start.sh feed
+./start.sh simulate
+
+# 2. 打开浏览器，访问 http://127.0.0.1:8770/
+
+# 3. 留证
+# - 终端 1: ./start.sh bridge > ../docs/evidence/bridge.log 2>&1
+# - 浏览器截图保存到 docs/evidence/viewer-*.png
+# - 终端 2: docker logs agentteams-controller > ../docs/evidence/container-logs.txt
 ```
 
-Then open the AgentTeams repo in Cursor, Claude Code, or similar AI tool and ask:
+---
 
-> "Read the JSONL files in debug-log/. Analyze the Matrix message logs and agent session logs together. Cross-reference with the AgentTeams codebase to identify the root cause of [describe your bug]."
+## 五、进阶使用
 
-Include the AI's analysis in your [bug report](https://github.com/agentscope-ai/AgentTeams/issues/new?template=bug_report.yml).
+### 端口占用参考
 
-You can also let the AI tool submit the issue or PR directly. Install [GitHub CLI](https://cli.github.com/), run `gh auth login` to authenticate in your browser, then add the [OpenClaw GitHub skill](https://github.com/openclaw/openclaw/blob/main/skills/github/SKILL.md) to your AI coding tool (Cursor, Claude Code, etc.). After that, just ask it to file the issue or open a PR based on its analysis.
+| 端口 | 用途 |
+|---|---|
+| 8770 | 宿主机 Bridge HTTP API + Viewer |
+| 18080 | 容器内 Higress Console |
+| 18001 | 容器内辅助 |
+| 18088 | 容器内辅助 |
+| 6167 | 容器内 Matrix 客户端端口（给 Bridge 直连用） |
 
-## Build & Test
+### 投递自定义消息
 
 ```bash
-make build          # Build all images
-make test           # Build + run all integration tests
-make test-quick     # Smoke test only
+# 投递一条临时消息
+python3 wechat-agentteams-e2e/simulator/wechat_sim.py \
+  --bridge http://127.0.0.1:8770 \
+  --text "VPN 连不上，提示证书过期" \
+  --sender "测试员工"
 ```
 
-## Other Commands
+### 切换 LLM Provider
 
-```bash
-make replay TASK="Create a Worker named alice for frontend development"
-make uninstall
-make help
-```
+修改 `.env` 中的 `AGENTTEAMS_LLM_API_KEY` 与 `AGENTTEAMS_OPENAI_BASE_URL`，重启 controller 即可。已验证兼容 StepFun、Qwen、OpenAI 等 openai-compat 接口。
 
-## Community
+---
 
-- [Discord](https://discord.gg/NVjNA4BAVw)
-- [GitHub Issues](https://github.com/agentscope-ai/AgentTeams/issues)
+## 六、与官方 AgentTeams 的关系
+
+本仓库 fork 自 [agentscope-ai/AgentTeams](https://github.com/agentscope-ai/AgentTeams)。我们对官方代码做了**最小侵入式二次开发**：
+
+| 模块 | 改动 | 性质 |
+|---|---|---|
+| `wechat-agentteams-e2e/` | **新增** | ServiceDesk Pilot 演示入口 |
+| `wechat-agentteams-e2e/_recreate_controller.sh` | **新增 / 重写** | 跨平台容器启动脚本 |
+| `README.md` | **重写** | 官方 README 面向 K8s 部署；本 README 面向"比赛提交"维度 |
+| `README.zh-CN.md` / `README.ja-JP.md` | **归档到 `docs/archive/`** | 保留作为官方版本参考 |
+| `agentteams-controller/` `manager/` `worker/` `copaw/` `hermes/` `openclaw-base/` `openhuman/` `helm/` `qwenpaw/` `plugins/` | **未改动** | 直接使用官方版本运行 |
+
+**未引入新组件原则**：ServiceDesk Pilot 复用 AgentTeams 原生的 Manager + 4 Worker 模型，没有新增 operator、新增镜像、新增运行时。仅在 IM 接入层做了适配，把"模拟微信群"作为新的 IM 信源接进 Matrix 房间。
+
+**Manager 提示词的二次开发**：见 [`wechat-agentteams-e2e/prompts/manager-team-prompt.md`](wechat-agentteams-e2e/prompts/manager-team-prompt.md)——它定义了 ServiceDesk Pilot 的协议：
+- 消息包络识别规则
+- 4 个 Worker 的职责边界
+- 自动推进规则（避免每阶段都要人工确认）
+- 唯一例外：不可逆操作前必须发确认消息
+
+---
+
+## 七、致谢与参考
+
+- **AgentTeams 官方仓库**：[github.com/agentscope-ai/AgentTeams](https://github.com/agentscope-ai/AgentTeams)
+- **Higress AI Gateway**：[higress.cn](https://higress.cn/)
+- **Tuwunel Matrix Server**：[github.com/matrix-construct/tuwunel](https://github.com/matrix-construct/tuwunel)
+- **CoPaw / QwenPaw** — Python-based Agent runtime
+
+---
 
 ## License
 
-Apache License 2.0
+本项目以 Apache 2.0 协议开源（继承自上游 AgentTeams）。
+
+ServiceDesk Pilot 演示代码（`wechat-agentteams-e2e/`）由本仓库作者贡献。

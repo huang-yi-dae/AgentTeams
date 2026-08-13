@@ -1,2 +1,22 @@
+# Python
 __pycache__/
+*.pyc
+*.pyo
+
+# Logs
 *.log
+
+# 敏感凭据 — 不要提交
+.env
+.env.local
+.env.*.local
+agentteams-manager.env
+
+# IDE / 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 临时文件
+*.tmp
+.DS_Store

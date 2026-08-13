@@ -132,11 +132,11 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/":
-            self._serve_file("viewer/index.html", "text/html")
+            self._serve_file("../viewer/index.html", "text/html")
         elif self.path == "/wechat.html":
-            self._serve_file("viewer/wechat.html", "text/html")
+            self._serve_file("../viewer/wechat.html", "text/html")
         elif self.path == "/agentflow.html":
-            self._serve_file("viewer/agentflow.html", "text/html")
+            self._serve_file("../viewer/agentflow.html", "text/html")
         elif self.path == "/api/status":
             self._json({"rooms": list(self.bridge.client.joined_rooms()), "last_sync": time.time()})
         elif self.path.startswith("/api/events"):

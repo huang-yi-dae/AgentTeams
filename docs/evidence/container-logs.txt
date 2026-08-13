@@ -1,0 +1,22 @@
+2026-08-13 11:34:03,440 INFO Set uid to user 0 succeeded
+2026-08-13 11:34:03,446 INFO supervisord started with pid 1
+2026-08-13 11:34:04,477 INFO spawned: 'minio' with pid 7
+2026-08-13 11:34:04,492 INFO spawned: 'tuwunel' with pid 8
+2026-08-13 11:34:04,498 INFO spawned: 'higress-apiserver' with pid 9
+2026-08-13 11:34:04,503 INFO spawned: 'higress-controller' with pid 12
+2026-08-13 11:34:04,510 INFO spawned: 'higress-pilot' with pid 13
+2026-08-13 11:34:04,517 INFO spawned: 'higress-gateway' with pid 17
+2026-08-13 11:34:04,529 INFO spawned: 'higress-console' with pid 26
+2026-08-13 11:34:04,534 INFO spawned: 'element-web' with pid 30
+2026-08-13 11:34:04,537 INFO spawned: 'mc-mirror' with pid 31
+2026-08-13 11:34:04,552 INFO spawned: 'agentteams-controller' with pid 33
+2026-08-13 11:34:05,476 INFO success: minio entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,507 INFO success: tuwunel entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,507 INFO success: higress-apiserver entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,507 INFO success: higress-controller entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,507 INFO success: higress-pilot entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,520 INFO success: higress-gateway entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,542 INFO success: higress-console entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,543 INFO success: element-web entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,543 INFO success: mc-mirror entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)
+2026-08-13 11:34:05,543 INFO success: agentteams-controller entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)

@@ -1,65 +1,61 @@
-# wechat-agentteams-e2e · 微信群 → Agent Team → 回传 端到端演示
+# wechat-agentteams-e2e — ServiceDesk Pilot 演示入口
 
-基于 AgentTeams 原生 Docker 部署，宿主机 Python 模拟「微信群报障」推入体系，容器内 6 个 Agent 协作处理后回传群聊，通过零 mock 双视图实时观测。
+> 本目录是 ServiceDesk Pilot 比赛演示的全部代码。从这里开始上手最快。
+> 上层说明见 [根 README](../README.md) 与 [运行手册](../docs/RUNBOOK.md)。
 
-> 数据真实性约束：两个 HTML 视图渲染的每一条消息都来自容器内 Matrix 实时 `/sync` 事件，无 mock。
+## 一键启动
 
-## 环境要求
-
-| 依赖 | 说明 |
-|------|------|
-| Docker Desktop 4.x+ | WSL2 后端 |
-| Python 3.10+ | 纯标准库 |
-| Windows 11 24H2 | 需配置 `.wslconfig` 设 `networkingMode=nat` |
-
-## 快速开始
-
-### 1. 部署 AgentTeams
-
-```powershell
-$env:AGENTTEAMS_NON_INTERACTIVE="1"
-$env:AGENTTEAMS_LLM_PROVIDER="openai-compat"
-$env:AGENTTEAMS_OPENAI_BASE_URL="https://api.stepfun.com/step_plan/v1"
-$env:AGENTTEAMS_DEFAULT_MODEL="step-3.7-flash"
-$env:AGENTTEAMS_LLM_API_KEY="<YOUR_KEY>"
-$env:AGENTTEAMS_ADMIN_USER="admin"
-$env:AGENTTEAMS_ADMIN_PASSWORD="AgentTeams2026"
-$env:AGENTTEAMS_MOUNT_SOCKET="1"
-& ".\install\agentteams-install.ps1" manager
+```bash
+cp .env.example .env          # 1. 准备配置
+vi .env                        # 2. 填入 AGENTTEAMS_LLM_API_KEY
+./start.sh controller          # 3. 启动 controller 容器
+./start.sh bridge              # 4. 启动宿主机桥接 (另开终端)
+./start.sh feed                # 5. 投喂 Manager 组队指令
+./start.sh viewer              # 6. 浏览器打开观察
+./start.sh simulate            # 7. 推送 6 条模拟消息
 ```
 
-⚠️ 如果只有 controller 没有 manager：重建时加 `-e AGENTTEAMS_MATRIX_APPSERVICE_ENABLED=false`（见 `_recreate_controller.sh`）。
+## 本目录结构
 
-### 2. 启动桥接
-
-```powershell
-cd wechat-agentteams-e2e/bridge
-python server.py --port 8770
+```
+wechat-agentteams-e2e/
+├── start.sh                   一键启动入口 (controller / bridge / viewer / simulate / feed)
+├── .env.example               配置样例
+├── .gitignore                 排除 .env 与日志
+├── _recreate_controller.sh    跨平台 controller 容器启动脚本
+├── README.md                  本文件（对内说明）
+│
+├── bridge/                    宿主机 IM 适配层 (核心混合层 / bridge)
+│   ├── server.py              HTTP API + Matrix sync 主服务
+│   ├── matrix_client.py       Matrix C-S API 客户端 (标准库实现)
+│   └── feed_manager.py        admin → @manager DM 投喂工具
+│
+├── simulator/                 微信群消息模拟器
+│   ├── wechat_sim.py          推送脚本 (按 JSON 顺序推送或临时单条)
+│   └── messages.json          6 个真实 IT 服务台场景
+│
+├── viewer/                    浏览器观察页面 (零依赖纯 HTML)
+│   ├── index.html             总览
+│   ├── agentflow.html         视图一: Agent 对话流 (来自 Matrix 真实事件)
+│   └── wechat.html            视图二: 模拟微信群 (员工 ↔ 服务台)
+│
+├── prompts/
+│   └── manager-team-prompt.md 投喂给 Manager 的系统级组队指令
+│
+└── presentaion/                   参赛 PPT (V2.1 ~ V2.3 迭代)
 ```
 
-访问: 总览 `8770/`, 视图一 `8770/agentflow.html`, 视图二 `8770/wechat.html`。
+## 三个进程的角色
 
-### 3. 投喂组队 + 模拟消息
+| 进程 | 在哪跑 | 端口 | 作用 |
+|---|---|---|---|
+| **controller** | Docker 容器 | 18080 / 18001 / 18088 / 6167 | Matrix / Higress / Manager / 4 个 Worker |
+| **bridge** | 宿主机 Python | 8770 | IM 适配层 (模拟微信群 ↔ Matrix 房间 ↔ 浏览器) |
+| **simulator** | 宿主机 Python (一次性) | — | 推送模拟微信群消息 |
 
-```powershell
-python feed_manager.py --wait 150           # 投喂组队指令
-cd ../simulator && python wechat_sim.py --interval 60  # 推送模拟消息
-```
+## 设计取舍
 
-## 关键文件
-
-| 路径 | 作用 |
-|------|------|
-| `bridge/matrix_client.py` | Matrix 客户端 (纯标准库) |
-| `bridge/server.py` | 桥接服务 + 双视图 |
-| `bridge/feed_manager.py` | DM 投喂组队指令 |
-| `simulator/wechat_sim.py` | 微信群消息模拟器 |
-| `simulator/messages.json` | 6 条种子场景 |
-| `viewer/*.html` | 三视图 (零 mock) |
-| `prompts/manager-team-prompt.md` | Manager 组队指令 |
-
-## 常见问题
-
-- **端口 18080 000**: 设 `.wslconfig` 为 NAT 模式并重启 Docker
-- **AppService panic**: 重建加 `-e AGENTTEAMS_MATRIX_APPSERVICE_ENABLED=false`
-- **模型报错**: 确认 `AGENTTEAMS_DEFAULT_MODEL` 为有效模型名
+- **bridge 用 Python 标准库**: 评审 clone 即可跑, 无需 `pip install`。
+- **viewer 用纯 HTML**: 不需要 Node 打包链, 浏览器直接打开。
+- **不引入新镜像**: 完全复用官方 `agentteams-embedded:latest`, 改动只发生在 IM 适配层。
+- **Manager 提示词即协议**: `prompts/manager-team-prompt.md` 是 ServiceDesk Pilot 的"业务 spec", 把消息包络、4 Worker 职责、自动推进规则写死。

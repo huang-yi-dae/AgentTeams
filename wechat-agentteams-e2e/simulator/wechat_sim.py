@@ -43,8 +43,8 @@ def main():
 
     if args.text:
         mid = str(uuid.uuid4())
-        print(f"[sim] 发送 ad-hoc 消息: {msg}")
         msg = args.text
+        print(f"[sim] 发送 ad-hoc 消息: {msg}")
         resp = send_message(base_url, args.group_room, args.sender, msg, mid)
         print(f"[sim] 已发送 -> {resp.get('event_id','?')}")
         return
