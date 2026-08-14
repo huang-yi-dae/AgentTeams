@@ -21,9 +21,14 @@ $userHomePath = $env:USERPROFILE
 if (-not $userHomePath) { $userHomePath = $HOME }
 $UserHome = $userHomePath
 $HostEnvFile = Join-Path $UserHome 'agentteams-manager.env'
-$BridgePort = 8770
+$BridgePort = 7890  # 与 reset-demo.ps1 / start-demo-host.ps1 统一; 历史遗留默认值 8770 已弃用
 $ContainerName = 'agentteams-controller'
-$Image = 'higress-registry.cn-hangzhou.cr.aliyuncs.com/agentteams/agentteams-embedded:latest'
+# 注意: 必须用补丁版 :fixed 镜像。上游 :latest 有多个 operator bug (RUNBOOK §四):
+#  - env 文件生成的 admin 密码与 matrix 实际密码不一致 -> login 403
+#  - manager 镜像名缺失 -> 用 worker 镜像建 manager -> 崩 AGENTTEAMS_WORKER_NAME
+#  - 漏传 FS_ENDPOINT / MANAGER_GATEWAY_KEY 等
+# :fixed 镜像把这些正确配置全部烘焙进镜像, 规避上述 bug。
+$Image = 'agentteams/agentteams-embedded:fixed'
 $GroupRoom = '微信群-IT服务台支持群'
 
 # --- 颜色输出 ---

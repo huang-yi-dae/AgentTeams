@@ -1,0 +1,5 @@
+NAME              PHASE    MODEL           TEAM  RUNTIME
+ticket-intake     Running  step-3.7-flash  -     copaw
+triage-analyst    Running  step-3.7-flash  -     copaw
+verify            Running  step-3.7-flash  -     copaw
+resolution-agent  Running  step-3.7-flash  -     copaw

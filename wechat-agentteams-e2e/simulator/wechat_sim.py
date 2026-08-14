@@ -27,7 +27,7 @@ def get_events(base_url, since=0):
 
 def main():
     parser = argparse.ArgumentParser(description="微信群消息模拟器")
-    parser.add_argument("--bridge", default="http://127.0.0.1:8770", help="桥接服务地址")
+    parser.add_argument("--bridge", default="http://127.0.0.1:7890", help="桥接服务地址")
     parser.add_argument("--interval", type=int, default=90, help="推送间隔(秒)")
     parser.add_argument("--scenario", default="default", help="场景: default=所有消息, all=所有")
     parser.add_argument("--group-room", default="微信群-IT服务台支持群", help="目标房间名")

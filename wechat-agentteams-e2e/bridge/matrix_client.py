@@ -102,8 +102,11 @@ def load_env_file(path=None):
 
 def build_client_from_env(env=None):
     env = env or load_env_file()
-    gateway_port = env.get("AGENTTEAMS_PORT_GATEWAY", "18080")
-    matrix_domain = env.get("AGENTTEAMS_MATRIX_DOMAIN", f"matrix-local.agentteams.io:{gateway_port}")
-    base_url = f"http://127.0.0.1:{gateway_port}"
-    host = matrix_domain.split(":")[0] if ":" in matrix_domain else matrix_domain
-    return MatrixClient(base_url, host_header=f"{host}:{gateway_port}"), env
+    # Matrix CS API 实际监听 6167；18080 是 Higress 控制台（见 e2e-verification-2026-08-13.md:29
+    # "Higress(18080) / Element(18088) / Matrix(6167)"）。env 里的 AGENTTEAMS_PORT_GATEWAY=18080
+    # 指向 Higress，绝不能当 Matrix 端口用，否则 login 会 405。
+    # Host 头用 127.0.0.1:6167（与 :fixed 镜像内部 AGENTTEAMS_MATRIX_URL 一致），避免 Tuwunel 按
+    # 虚拟主机端口(:18080) 拒绝请求。
+    matrix_port = env.get("AGENTTEAMS_MATRIX_CS_PORT") or "6167"
+    base_url = f"http://127.0.0.1:{matrix_port}"
+    return MatrixClient(base_url, host_header=f"127.0.0.1:{matrix_port}"), env

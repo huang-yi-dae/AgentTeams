@@ -72,6 +72,13 @@ while IFS='=' read -r key value; do
   DOCKER_ENV_ARGS="$DOCKER_ENV_ARGS -e $key=$value"
 done < "$ENV_FILE"
 
+# --- 4b. 兜底默认值: 若 .env 未提供以下 key 则自动注入, 避免 Manager/Worker 缺变量 crash-loop ---
+#      用 grep 判断是否已在 .env 中, 仅在缺失时注入, 绝不覆盖用户自定义值。
+grep -q '^AGENTTEAMS_FS_ENDPOINT='        "$ENV_FILE" || DOCKER_ENV_ARGS="$DOCKER_ENV_ARGS -e AGENTTEAMS_FS_ENDPOINT=http://agentteams-controller:9000"
+grep -q '^AGENTTEAMS_MINIO_USER='         "$ENV_FILE" || DOCKER_ENV_ARGS="$DOCKER_ENV_ARGS -e AGENTTEAMS_MINIO_USER=admin"
+grep -q '^AGENTTEAMS_MINIO_PASSWORD='     "$ENV_FILE" || DOCKER_ENV_ARGS="$DOCKER_ENV_ARGS -e AGENTTEAMS_MINIO_PASSWORD=AgentTeams2026"
+grep -q '^AGENTTEAMS_MANAGER_GATEWAY_KEY=' "$ENV_FILE" || DOCKER_ENV_ARGS="$DOCKER_ENV_ARGS -e AGENTTEAMS_MANAGER_GATEWAY_KEY=servicedesk-gateway-key-2026"
+
 # --- 5. 检查端口占用 ---
 check_port() {
   local port=$1

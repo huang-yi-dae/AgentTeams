@@ -347,3 +347,91 @@ docker exec agentteams-worker-ticket-intake sed -i 's|"http://127.0.0.1:6167"|"h
 # 同样修其他 3 个 worker
 ```
 
+
+
+---
+
+## 三、降级方案：纯 Python Demo（推荐用于比赛演示）
+
+> **背景**：`agentteams-embedded:latest` 镜像里的 controller operator 有多个严重 bug（见 §四 已知问题），无法跑通 manager/worker 容器闭环。已用**纯 Python 标准库 demo** 作为降级方案，跑通 9 阶段端到端闭环。
+
+### 3.1 跑通步骤
+
+```bash
+cd servicedesk-pilot-demo
+python run_demo.py --approval-mode auto_skip   # 跑全部 5 个场景
+```
+
+### 3.2 跑通后的产物
+
+| 产物 | 路径 | 用途 |
+|---|---|---|
+| `out/dashboard.html` | HTML 亮色主题看板 | 评审视觉展示 |
+| `out/report.md` | 文字版复盘报告 | 评审文字阅读 |
+| `out/trace.json` | 全链路 Trace | 评审审计 |
+
+5 个场景示例输出：
+```
+指标:工单 5 · 解决 3 · 升级 2 · 免审批 1 · 知识写回 13
+知识库:runbooks 4→5 · cases 4→9 · badcases 0→1
+MCP 工具调用:7 / 86%
+RAG 命中率:5 / 80%
+```
+
+### 3.3 产物已留证于 `docs/evidence/servicedesk-demo/`
+
+- `dashboard.html` (34KB)
+- `report.md` (4KB)
+- `trace.json` (222KB)
+
+---
+
+## 四、已知问题:agentteams-embedded controller operator bug
+
+`agentteams-embedded:latest` 镜像里的 controller operator (Go) 存在以下无法通过配置绕开的 bug:
+
+### 4.1 manager 镜像名缺失
+controller 二进制里 hardcode 了 worker 镜像名 (`agentteams-copaw-worker:latest`),**没有 manager 镜像名**。fallback 用 worker 镜像创建 manager 容器,导致 manager 跑 worker 进程(缺 `AGENTTEAMS_WORKER_NAME` 报错)。
+
+### 4.2 agent 容器 env IP 错误
+agent 容器 env 中 `AGENTTEAMS_AI_GATEWAY_URL` / `MATRIX_URL` 都是 `127.0.0.1`,但每个 agent 容器独立 loopback 没有这些服务。manager/worker 无法连 controller 的 Higress / Matrix。
+
+### 4.3 FS env 漏传
+controller 创建 worker 容器时漏传 `AGENTTEAMS_FS_ENDPOINT`,worker 启动报 `AGENTTEAMS_FS_ENDPOINT is required`。
+
+### 4.4 Token refresh 卡死
+agent 容器 dead 后 controller 还在调 `docker exec create` 而不是 `docker run` 重建容器。
+
+### 4.5 MANAGER_GATEWAY_KEY 未生成
+higress API 调用失败导致 manager 凭证生成流程中断,manager 容器启动报 `AGENTTEAMS_MANAGER_GATEWAY_KEY is required`。
+
+**修复方向**:PR 给上游 `agentscope-ai/AgentTeams`。
+
+**当前绕过（2026-08-14 更新）**:
+- **本地直接跑通 `wechat-agentteams-e2e/`**:本机有补丁版镜像 `agentteams/agentteams-embedded:fixed`（创建于 2026-08-10），已把正确配置烘焙进镜像——`AGENTTEAMS_MATRIX_URL=http://127.0.0.1:6167`、`AGENTTEAMS_ADMIN_PASSWORD=AgentTeams2026`（与 matrix 实际密码一致）、`AGENTTEAMS_MANAGER_RUNTIME=copaw` + `AGENTTEAMS_MANAGER_IMAGE=higress-registry.cn-hangzhou.cr.aliyuncs.com/agentteams/agentteams-manager-copaw:latest`（带完整 registry 前缀）、`AGENTTEAMS_FS_ENDPOINT` / `AGENTTEAMS_MANAGER_GATEWAY_KEY` 全齐。用它替换上游 `:latest` 即可规避 §4.1–4.5 全部 bug，`wechat-agentteams-e2e/` 完整链路（controller → bridge → Manager 组队 → 工单闭环）可直接跑通。该镜像由 `start.ps1` / `reset-demo.ps1` 默认使用。
+  - ⚠️ `copaw` 是**合法**的 Manager runtime（与 worker 共用 copaw-manager 镜像），并非 worker-only；之前"Manager 必须用 openclaw/qwenpaw"的判断已证伪。
+  - ⚠️ `:fixed` 是**本地 tag, 不在公开 registry**; 评委/外部按 `:latest` 复现仍会撞上述 bug。
+- **对外可复现降级方案**:`servicedesk-pilot-demo/` 纯 Python 演示, 保留 `wechat-agentteams-e2e/` 代码作为未来工作基础。
+
+---
+
+## 五、wechat-agentteams-e2e 完整代码已就绪（待 controller 修复后跑通）
+
+`wechat-agentteams-e2e/` 是完整的"微信群 → Bridge → Matrix → Manager → Worker"链路实现,包含:
+
+| 文件 | 行数 | 作用 |
+|---|---|---|
+| `start.ps1` | 340 | PowerShell 一键启动入口(6 子命令) |
+| `start.sh` | 247 | Bash 跨平台启动入口 |
+| `.env.example` | 30 | 配置样例(含 `AGENTTEAMS_AI_GATEWAY_ADMIN_URL`、`AGENTTEAMS_REGISTRATION_TOKEN` 等) |
+| `_recreate_controller.sh` | 115 | 跨平台容器启动脚本 |
+| `bridge/server.py` | 200+ | HTTP API + Matrix sync |
+| `bridge/matrix_client.py` | 100+ | Matrix C-S API 客户端(标准库实现) |
+| `bridge/feed_manager.py` | 80+ | admin → @manager DM 投喂 |
+| `simulator/wechat_sim.py` | 80+ | 微信群消息模拟器 |
+| `viewer/*.html` | 3 个 | 浏览器可视化(总览/Agent 流/微信群) |
+| `prompts/manager-team-prompt.md` | 80 | ServiceDesk Pilot 协议(消息包络/4 Worker 职责/自动推进规则) |
+
+**架构**:3 进程(controller Docker / bridge 宿主机 Python / simulator 宿主机 Python)。
+
+**待修复的 controller bug 后**,按 RUNBOOK §二 步骤跑通即可。
