@@ -110,6 +110,17 @@ try {
   & $python feed_manager.py --env-file $HostEnvFile --wait $FeedWaitSec
 } finally { Pop-Location }
 
+# --- 8.5. (兼容性) 第二次投喂, 确保 Manager 就绪后能接到 ---
+# 现象: Manager CoPaw runtime 启动初期 matrix sync 可能错过第一次 prompt,
+# 等 30s 再发一次保证稳定。已实测: 第一次发完 Manager 可能"激活但不创建 Worker",
+# 第二次发后才正常完成 4 Worker 链。
+Write-Info '等 30s 后第二次投喂 (兼容性保险)'
+Start-Sleep -Seconds 30
+Push-Location (Join-Path $ScriptDir 'bridge')
+try {
+  & $python feed_manager.py --env-file $HostEnvFile --wait $FeedWaitSec
+} finally { Pop-Location }
+
 # --- 9. 打开浏览器观察 ---
 Write-Info '打开浏览器观察页面'
 Start-Process "http://127.0.0.1:$BridgePort/" -ErrorAction SilentlyContinue
