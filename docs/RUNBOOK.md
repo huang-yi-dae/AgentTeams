@@ -380,13 +380,19 @@ ticket-intake → triage-analyst → resolution → verify
 1. `manager-team-prompt.md` 第一章 "字节级约束" + 5 个错误示例 + 1 个正确示例
 2. `bridge/server.py` 兜底分支：`role == "manager" and room_label == 网关房` → 自动标 `wechat_reply`，不依赖前缀
 
-### Q16: reset-demo.ps1 跑到一半 docker 命令全部 500 失败
+### Q16: reset-demo.ps1 跑到一半 docker 命令全部 500 失败 / Docker Desktop 完全未启动
 
-**症状**：所有 `docker exec / docker logs` 返回 `request returned 500 Internal Server Error for API route and version .../dockerDesktopLinuxEngine/...`。
+**症状 A — Docker Desktop 未启动**：所有 docker 命令返回 `cannot find the file specified / named pipe / The system cannot find...`，任务栏 Docker 图标灰色。
 
-**根因**：Docker Desktop 引擎在 controller 重启过程中 API 路由短暂失败，PowerShell 不抛异常（只是非零 exit），导致后续步骤看似在跑实则无效。
+**症状 B — Docker Desktop 启了但 API 500**：`docker exec / docker logs` 返回 `request returned 500 Internal Server Error for API route and version .../dockerDesktopLinuxEngine/...`。PowerShell 不抛异常（只是非零 exit），导致后续步骤看似在跑实则无效。
 
-**修复**：`reset-demo.ps1` Step 0 预检 `docker info + docker version`，失败立刻退出并提示重启 Docker Desktop。
+**根因**：
+- 症状 A：Docker Desktop 服务未启动（named pipe 不可用）
+- 症状 B：Docker Desktop 引擎在 controller 重启过程中 API 路由短暂失败
+
+**修复**：`reset-demo.ps1` Step 0 预检 `docker info + docker version`，并区分两种失败给出不同提示：
+- 症状 A → 提示启动 Docker Desktop
+- 症状 B → 提示 Settings → Troubleshoot → Restart Docker Desktop + 显示 stderr 前 5 行
 
 ### Q17: Higress Console (http://127.0.0.1:18080/) 登录页看不到密码框
 
