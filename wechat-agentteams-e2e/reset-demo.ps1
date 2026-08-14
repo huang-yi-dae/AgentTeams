@@ -27,6 +27,36 @@ function Write-Info($msg)  { Write-Host '==> ' -NoNewline -ForegroundColor Green
 function Write-Warn2($msg) { Write-Host '[WARN] ' -NoNewline -ForegroundColor Yellow; Write-Host $msg }
 function Write-Err2($msg)  { Write-Host '[ERROR] ' -NoNewline -ForegroundColor Red; Write-Host $msg }
 
+# --- 0. 预检: Docker 引擎是否健康 ---
+# 现象: Docker Desktop 在 controller 重启过程中偶发 API 500 (dockerDesktopLinuxEngine 路由失败),
+#       所有 docker exec / docker logs 静默失败但 PowerShell 不明显报错, 导致后续步骤看似在跑实则无效。
+#       在 reset 开头先验证, 失败立刻退出, 提示用户重启 Docker Desktop。
+Write-Info '预检: Docker 引擎健康状态'
+try {
+  $dockerInfo = docker info 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    throw "docker info exit=$LASTEXITCODE"
+  }
+  if ($dockerInfo -match 'ERROR|Internal Server Error|pipe/dockerDesktopLinuxEngine') {
+    throw "docker info 输出含异常关键字"
+  }
+  # 进一步: 真实执行一次轻量 docker 命令, 排除 docker info 静默 ok 但 exec 不通的情况
+  $null = docker version --format '{{.Server.Version}}' 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    throw "docker version exit=$LASTEXITCODE"
+  }
+  Write-Info "Docker 引擎健康 (server: $(docker version --format '{{.Server.Version}}'))"
+} catch {
+  Write-Err2 "Docker 引擎不可用: $_"
+  Write-Host ''
+  Write-Host '请按以下顺序排查:' -ForegroundColor Yellow
+  Write-Host '  1. Docker Desktop 是否在运行 (任务栏图标)' -ForegroundColor Yellow
+  Write-Host '  2. Settings → Troubleshoot → Restart Docker Desktop' -ForegroundColor Yellow
+  Write-Host '  3. 重启后跑 `docker ps` 确认能列出容器' -ForegroundColor Yellow
+  Write-Host '  4. 重新执行 .\reset-demo.ps1' -ForegroundColor Yellow
+  exit 1
+}
+
 # --- 0. 危险确认 ---
 if (-not $SkipConfirm) {
   Write-Host ''
