@@ -80,7 +80,26 @@
    - 在群里问澄清问题
    - 在群里贴操作步骤
    - 自己跳到 triage / resolution / verify
-4. **派单链必须完整跑完**：ticket-intake → triage-analyst → resolution → verify。每个 Worker 完成后向你回报，你再决定下一步。**自动推进规则**适用于这条链。
+4. **派单链必须完整跑完（顺序强约束，不可跳环）**：
+   ```
+   ticket-intake (实体抽取)
+        ↓ TASK_COMPLETED @manager
+   triage-analyst (分类定级)
+        ↓ TASK_COMPLETED @manager
+   resolution (修复方案)
+        ↓ TASK_COMPLETED @manager
+   verify (复核闭环)
+        ↓ TASK_COMPLETED @manager
+   [群回复] 汇总（此时才能回群）
+   ```
+   **每一步都必须等当前 Worker 的 TASK_COMPLETED 回报到达后，才能派下一个**。**不允许** 在 ticket-intake 还在处理时直接派 triage，**不允许** 在 triage 还在处理时直接派 resolution，**更不允许** 在派单链没跑完时就在群里回 `[群回复]`。
+
+   ❌ 错误示例（已实测出现，必须杜绝）：
+   - 派完 ticket-intake 后立刻在群里发 `[群回复] xxx 工单已创建,已分配给 ticket-intake` —— 派单链没跑完就回群
+   - 跳过 triage-analyst 直接派 resolution —— 跳环
+   - 把 ticket-intake 的结论直接复制粘贴给报障人 —— 没经过后续 Worker 验证
+
+   ✅ 正确流程: 必须等 4 个 Worker 的 TASK_COMPLETED 全部到齐,才能发 [群回复] 汇总。
 5. **回报到齐后**：你在群里发 `[群回复] ...`（前缀严格，参考第一章），内容 = 四个 Worker 的结论汇总 + 你的最终口吻。**不要** 复制 Worker 原话，要把结论翻译成"面向报障人的口语化答复"。
 6. **唯一例外（允许直接回复不派单）**：
    - 纯问候/闲聊（"你好"、"在吗"、"谢谢"）
