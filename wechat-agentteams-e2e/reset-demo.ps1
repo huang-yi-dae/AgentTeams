@@ -47,13 +47,29 @@ try {
   }
   Write-Info "Docker 引擎健康 (server: $(docker version --format '{{.Server.Version}}'))"
 } catch {
-  Write-Err2 "Docker 引擎不可用: $_"
-  Write-Host ''
-  Write-Host '请按以下顺序排查:' -ForegroundColor Yellow
-  Write-Host '  1. Docker Desktop 是否在运行 (任务栏图标)' -ForegroundColor Yellow
-  Write-Host '  2. Settings → Troubleshoot → Restart Docker Desktop' -ForegroundColor Yellow
-  Write-Host '  3. 重启后跑 `docker ps` 确认能列出容器' -ForegroundColor Yellow
-  Write-Host '  4. 重新执行 .\reset-demo.ps1' -ForegroundColor Yellow
+  # 区分两种失败: docker CLI 完全找不到 (Docker Desktop 没启动)
+  #                vs docker info 返回但内容是 500 (Docker Desktop API 路由失败)
+  $errMsg = $_.Exception.Message
+  $dockerErr = (& docker info 2>&1 | Out-String)
+  if ($dockerErr -match 'cannot find the file specified|named pipe|The system cannot find') {
+    Write-Err2 "Docker Desktop 未运行 (named pipe 找不到)"
+    Write-Host ''
+    Write-Host '请按以下顺序排查:' -ForegroundColor Yellow
+    Write-Host '  1. 启动 Docker Desktop (任务栏右键 → Start)' -ForegroundColor Yellow
+    Write-Host '  2. 等图标变绿 (约 30s-1min)' -ForegroundColor Yellow
+    Write-Host '  3. 重新执行 .\reset-demo.ps1' -ForegroundColor Yellow
+  } else {
+    Write-Err2 "Docker 引擎异常: $errMsg"
+    Write-Host ''
+    Write-Host '详细输出 (前 5 行):' -ForegroundColor Yellow
+    ($dockerErr -split "`n" | Select-Object -First 5) | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+    Write-Host ''
+    Write-Host '请按以下顺序排查:' -ForegroundColor Yellow
+    Write-Host '  1. Docker Desktop 是否在运行 (任务栏图标应绿)' -ForegroundColor Yellow
+    Write-Host '  2. Settings → Troubleshoot → Restart Docker Desktop' -ForegroundColor Yellow
+    Write-Host '  3. 重启后跑 `docker ps` 确认能列出容器' -ForegroundColor Yellow
+    Write-Host '  4. 重新执行 .\reset-demo.ps1' -ForegroundColor Yellow
+  }
   exit 1
 }
 
