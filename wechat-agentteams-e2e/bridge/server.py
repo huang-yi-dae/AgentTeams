@@ -144,6 +144,10 @@ class Bridge:
             rec["wechat"] = wechat
         elif body.startswith("[群回复]"):
             rec["kind"] = "wechat_reply"
+        elif role == "manager" and room_label == self.gateway_room_name:
+            # 兜底: Manager 在网关房里发的消息 = 给微信群的回复,
+            # 不依赖 [群回复] 前缀 (LLM 经常省略前缀).
+            rec["kind"] = "wechat_reply"
         elif room_label == self.gateway_room_name:
             rec["kind"] = "gateway_progress"
 
