@@ -61,11 +61,21 @@ def main():
 
     time.sleep(args.wait)
 
-    # 看回复
-    msgs = client.messages(dm_room, limit=5)
+    # 看回复（过滤空 body / 非文本事件，只取最近一条有效文本）
+    msgs = client.messages(dm_room, limit=10)
+    replies = []
     for ev in msgs.get("chunk", []):
-        if ev.get("sender") != client.user_id:
-            print(f"\n[manager 回复] {ev.get('content',{}).get('body','')[:300]}")
+        if ev.get("sender") == client.user_id:
+            continue
+        if ev.get("type") != "m.room.message":
+            continue
+        body = ev.get("content", {}).get("body", "").strip()
+        if body:
+            replies.append(body)
+    if replies:
+        print(f"\n[manager 回复] {replies[0][:400]}")
+    else:
+        print("\n[manager 回复] (等待窗口内未收到非空文本回复，可去 http://localhost:7890/wechat.html 查看)")
     return 0
 
 

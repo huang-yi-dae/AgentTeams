@@ -1,9 +1,27 @@
 #!/usr/bin/env python3
 """桥接服务 — 登录容器 Matrix，同步真实事件，提供双视图 + JSON API。"""
-import argparse, json, os, sys, threading, time, http.server
+import argparse, json, os, sys, threading, time, http.server, re
 from matrix_client import build_client_from_env, load_env_file
 
-WECHAT_ENVELOPE_RE = r"\[微信群消息\]\s*群:\s*(?P<group>.+?)\s*\|\s*成员:\s*(?P<sender>.+?)\s*\|\s*消息ID:\s*(?P<mid>.+)\|?\s*时间:\s*(?P<ts>.+)"
+
+def parse_wechat_envelope(body):
+    """从微信群消息包络正文解析结构化字段。包络格式见 wechat_sim.WECHAT_ENVELOPE。
+    用分步 search 而非单个巨型正则，避免惰性回溯在 `|` 分隔字段上失败 (曾导致 text 解析不出)。"""
+    if "[微信群消息]" not in body:
+        return None
+    d = {}
+    for key, pat in [
+        ("group",  r"群:\s*([^\n|]+)"),
+        ("sender", r"成员:\s*([^\n|]+)"),
+        ("mid",    r"消息ID:\s*(\S+)"),
+        ("ts",     r"时间:\s*([^\n]+)"),
+        ("text",   r"内容:\s*(.*)"),
+    ]:
+        m = re.search(pat, body, re.DOTALL)
+        if m:
+            d[key] = m.group(1).strip()
+    return d or None
+
 
 
 class EventStore:
@@ -31,6 +49,12 @@ class EventStore:
     @property
     def last_seq(self):
         return self._seq
+
+    def clear(self):
+        with self._lock:
+            self._events.clear()
+            self._seq = 0
+            return {"seq": 0, "ts": int(time.time() * 1000), "kind": "reset"}
 
 
 class Bridge:
@@ -114,12 +138,15 @@ class Bridge:
         }
 
         # 识别微信群消息包络
-        import re
-        m = re.match(r"\[微信群消息\]\s*群:\s*(?P<group>.+?)\s*\|\s*成员:\s*(?P<sender>.+?)\s*\|\s*消息ID:\s*(?P<mid>.+)\|?\s*时间:\s*(?P<ts>.+)", body, re.DOTALL)
-        if m:
+        wechat = parse_wechat_envelope(body)
+        if wechat:
             rec["kind"] = "wechat_inbound"
-            rec["wechat"] = m.groupdict()
+            rec["wechat"] = wechat
         elif body.startswith("[群回复]"):
+            rec["kind"] = "wechat_reply"
+        elif role == "manager" and room_label == self.gateway_room_name:
+            # 兜底: Manager 在网关房里发的消息 = 给微信群的回复,
+            # 不依赖 [群回复] 前缀 (LLM 经常省略前缀).
             rec["kind"] = "wechat_reply"
         elif room_label == self.gateway_room_name:
             rec["kind"] = "gateway_progress"
@@ -132,11 +159,11 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/":
-            self._serve_file("viewer/index.html", "text/html")
+            self._serve_file("../viewer/index.html", "text/html")
         elif self.path == "/wechat.html":
-            self._serve_file("viewer/wechat.html", "text/html")
+            self._serve_file("../viewer/wechat.html", "text/html")
         elif self.path == "/agentflow.html":
-            self._serve_file("viewer/agentflow.html", "text/html")
+            self._serve_file("../viewer/agentflow.html", "text/html")
         elif self.path == "/api/status":
             self._json({"rooms": list(self.bridge.client.joined_rooms()), "last_sync": time.time()})
         elif self.path.startswith("/api/events"):
@@ -155,6 +182,9 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
             rid = self.bridge.gateway_room_id
             resp = self.bridge.client.send_text(rid, text)
             self._json({"event_id": resp.get("event_id"), "sent": True})
+        elif self.path == "/api/reset":
+            rec = self.bridge.store.clear()
+            self._json({"cleared": True, "seq": rec["seq"], "ts": rec["ts"]})
         else:
             self.send_error(404)
 
@@ -181,7 +211,7 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", type=int, default=8770)
+    parser.add_argument("--port", type=int, default=7890)
     parser.add_argument("--env-file", help="env 文件路径")
     parser.add_argument("--group-room", default="微信群-IT服务台支持群")
     args = parser.parse_args()

@@ -65,3 +65,9 @@ htmlcov/
 *.lz
 *.lzo
 ```
+
+# Demo output (regenerated on each run)
+servicedesk-pilot-demo/out/
+
+# WorkBuddy tooling (unrelated to project)
+.workbuddy/

@@ -7,6 +7,10 @@
 <style>
 body{margin:0;font-family:"Microsoft YaHei",sans-serif;background:#ededed}
 .header{background:#2e2e2e;color:#fff;padding:12px 16px;text-align:center;font-size:16px;font-weight:bold}
+.toolbar{padding:8px 12px;background:#f7f7f7;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;max-width:600px;margin:0 auto}
+.toolbar button{background:#07c160;color:#fff;border:none;border-radius:4px;padding:6px 14px;font-size:13px;cursor:pointer}
+.toolbar button:hover{background:#06ad56}
+.toolbar .status{font-size:12px;color:#888}
 .chat{padding:12px;max-width:600px;margin:0 auto}
 .msg{display:flex;margin:8px 0}
 .msg.me{flex-direction:row-reverse}
@@ -22,28 +26,50 @@ body{margin:0;font-family:"Microsoft YaHei",sans-serif;background:#ededed}
 </head>
 <body>
 <div class="header">微信群-IT服务台支持群</div>
+<div class="toolbar">
+  <button id="clearBtn">清屏</button>
+  <span class="status" id="status">等待事件...</span>
+</div>
 <div class="chat" id="chat"><div class="empty">等待群消息...</div></div>
 <script>
 const ADMINS=['admin','@admin','系统'];
 let since=0;
-function poll(){fetch('/api/events?since='+since).then(r=>r.json()).then(data=>{
-  if(!data.length)return;
-  const el=document.getElementById('chat');
-  if(el.querySelector('.empty'))el.innerHTML='';
-  data.forEach(e=>{
-    const d=document.createElement('div');
-    if(e.kind==='wechat_inbound'&&e.wechat){
-      d.className='msg other';
-      d.innerHTML='<div class="sender"><span class="name">'+e.wechat.sender+'</span></div><div class="bubble">'+e.wechat.text+'</div>';
-    }else if(e.kind==='wechat_reply'){
-      d.className='msg other';
-      d.innerHTML='<div class="sender"><span class="name">服务台助手</span></div><div class="bubble">'+e.body.replace('[群回复] ','')+'</div>';
+let eventCount=0;
+function updateStatus(msg){document.getElementById('status').textContent=msg||('事件: '+eventCount);}
+function poll(){
+  fetch('/api/events?since='+since).then(r=>r.json()).then(data=>{
+    if(data.length){
+      const el=document.getElementById('chat');
+      if(el.querySelector('.empty'))el.innerHTML='';
+      data.forEach(e=>{
+        if(e.kind==='reset'){
+          const d=document.createElement('div');d.className='msg system';d.innerHTML='<div class="bubble">页面已清屏</div>';el.appendChild(d);return;
+        }
+        const d=document.createElement('div');
+        if(e.kind==='wechat_inbound'&&e.wechat){
+          d.className='msg other';
+          d.innerHTML='<div class="sender"><span class="name">'+e.wechat.sender+'</span></div><div class="bubble">'+e.wechat.text+'</div>';
+        }else if(e.kind==='wechat_reply'){
+          d.className='msg other';
+          d.innerHTML='<div class="sender"><span class="name">服务台助手</span></div><div class="bubble">'+e.body.replace('[群回复] ','')+'</div>';
+        }
+        if(d.className)el.appendChild(d);
+      });
+      since=data[data.length-1]?.seq||since;
+      eventCount+=data.filter(x=>x.kind!=='reset').length;
+      updateStatus();
+      el.scrollTop=el.scrollHeight;
     }
-    el.appendChild(d);
-  });
-  since=data[data.length-1]?.seq||since;
-  el.scrollTop=el.scrollHeight;
-});setTimeout(poll,3000);}poll();
+  }).catch(err=>updateStatus('轮询失败: '+err.message)).finally(()=>setTimeout(poll,3000));
+}
+poll();
+
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  fetch('/api/reset',{method:'POST'}).then(r=>r.json()).then(j=>{
+    document.getElementById('chat').innerHTML='<div class="empty">等待群消息...</div>';
+    since=0;eventCount=0;updateStatus('已清屏');
+  }).catch(err=>updateStatus('清屏失败: '+err.message));
+});
 </script>
 </body>
 </html>

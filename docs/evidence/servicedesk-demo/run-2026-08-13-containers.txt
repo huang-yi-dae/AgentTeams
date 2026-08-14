@@ -1,0 +1,7 @@
+agentteams-worker-verify             Up 10 minutes                   agentteams/agentteams-copaw-worker:latest
+agentteams-manager-fixed             Up 12 minutes                   agentteams/agentteams-manager-copaw:latest
+agentteams-manager                   Restarting (1) 12 seconds ago   agentteams/agentteams-copaw-worker:latest
+agentteams-worker-triage-analyst     Up 25 minutes                   agentteams/agentteams-copaw-worker:latest
+agentteams-worker-ticket-intake      Up 25 minutes                   agentteams/agentteams-copaw-worker:latest
+agentteams-worker-resolution-agent   Up 25 minutes                   agentteams/agentteams-copaw-worker:latest
+agentteams-controller                Up 45 minutes                   higress-registry.cn-hangzhou.cr.aliyuncs.com/agentteams/agentteams-embedded:latest

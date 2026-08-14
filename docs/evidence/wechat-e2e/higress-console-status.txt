@@ -1,0 +1,22 @@
+# Higress Console 状态证据
+
+## 端口可达性
+HTTP 200
+
+## 登录 API 测试 (curl)
+{"name":"admin","password":null,"displayName":"admin","avatarUrl":null}
+
+## 已知问题
+Higress Console 是 React SPA 应用 (/workspace 路径返回 2741 字符 HTML, 
+无 password input 元素, 需客户端 JS hydration 后才出现登录框).
+curl 直连 /session/login API 可绕过 UI 验证 admin 凭证.
+
+## setup-higress.sh 实际用法 (来自 manager/scripts/lib/gateway-api.sh)
+  CONSOLE_URL=http://127.0.0.1:8001
+  curl -sf -X POST \/session/login -H 'Content-Type: application/json' \\
+    -c \ \\
+    -d '{"username":"admin","password":"..."}'
+
+我们的 e2e demo 用 :18080 端口 (controller 已端口映射), 凭证一致:
+  Username: admin
+  Password: AgentTeams2026
