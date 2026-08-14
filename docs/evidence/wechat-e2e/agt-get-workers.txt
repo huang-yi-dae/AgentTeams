@@ -1,0 +1,49 @@
+{
+  "workers": [
+    {
+      "name": "triage-analyst",
+      "phase": "Running",
+      "containerManaged": true,
+      "state": "Running",
+      "model": "step-3.7-flash",
+      "runtime": "openclaw",
+      "containerState": "running",
+      "matrixUserID": "@triage-analyst:matrix-local.agentteams.io:18080",
+      "roomID": "!mdW7twIJHMuM4n3A2N:matrix-local.agentteams.io:18080"
+    },
+    {
+      "name": "resolution",
+      "phase": "Running",
+      "containerManaged": true,
+      "state": "Running",
+      "model": "step-3.7-flash",
+      "runtime": "openclaw",
+      "containerState": "running",
+      "matrixUserID": "@resolution:matrix-local.agentteams.io:18080",
+      "roomID": "!M4L0voum8F1Ev0hXiM:matrix-local.agentteams.io:18080"
+    },
+    {
+      "name": "verify",
+      "phase": "Running",
+      "containerManaged": true,
+      "state": "Running",
+      "model": "step-3.7-flash",
+      "runtime": "openclaw",
+      "containerState": "running",
+      "matrixUserID": "@verify:matrix-local.agentteams.io:18080",
+      "roomID": "!Yc831hytFGUKx3lvgh:matrix-local.agentteams.io:18080"
+    },
+    {
+      "name": "ticket-intake",
+      "phase": "Running",
+      "containerManaged": true,
+      "state": "Running",
+      "model": "step-3.7-flash",
+      "runtime": "openclaw",
+      "containerState": "running",
+      "matrixUserID": "@ticket-intake:matrix-local.agentteams.io:18080",
+      "roomID": "!A11JaaYB6c42AdkF8G:matrix-local.agentteams.io:18080"
+    }
+  ],
+  "total": 4
+}

@@ -1,0 +1,29 @@
+# Bridge Event Log Summary
+
+来源: Bridge HTTP API /api/events?since=0
+事件总数: 200 条
+
+## 各 kind 分布:
+  agent_flow: 176
+  gateway_progress: 17
+  wechat_reply: 4
+  wechat_inbound: 3
+
+
+## 各 sender 分布:
+  admin: 110
+  manager: 36
+  conduit: 28
+  ticket-intake: 7
+  triage-analyst: 7
+  verify: 6
+  resolution: 5
+  ?: 1
+
+
+## 最近 5 条 wechat_reply (Manager [群回复]):
+  File "<string>", line 6
+    print(f'  [{r.get(\
+                     ^
+SyntaxError: '(' was never closed
+

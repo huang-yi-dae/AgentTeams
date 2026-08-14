@@ -1,0 +1,16 @@
+[demo] env=C:\Users\20145\agentteams-manager.env port=7890
+[demo] 1) token 刷新循环 (docker exec cat)
+[demo]    token loop 已启动 (临时脚本: C:\Users\20145\AppData\Local\Temp\agentteams-token-loop.ps1)
+[demo] 2) bridge 前端 (强制重启以加载最新代码)
+[demo]    bridge 已启动 (端口 7890)
+[demo] 3) 健康检查
+  / -> 200
+  /wechat.html -> 200
+  /agentflow.html -> 200
+  /api/status -> 200
+  /api/events -> 200
+[demo] token: SYNCED (manager 派单不会 401)
+[demo] 4) 启用 Manager YOLO 模式
+==> manager 容器 'agentteams-manager' 已在跑, 写入容器内 marker
+==> 已写入 /root/manager-workspace/yolo-mode (Manager 下次启动自动走 YOLO)
+[demo] done. 浏览器: http://localhost:7890/  (微信群视图: http://localhost:7890/wechat.html)

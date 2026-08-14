@@ -348,6 +348,62 @@ docker exec agentteams-worker-ticket-intake sed -i 's|"http://127.0.0.1:6167"|"h
 ```
 
 
+### Q13: Manager 收不到 `[微信群消息]`, 群里静默忽略
+
+**症状**：群里发了微信群消息包络，Manager 不派单、在群里回复 "继续静默忽略 / 微信联系人尚未被批准"。
+
+**根因**：Manager 默认按 `channel-management` skill 把 Matrix 群消息 sender 当作身份。但 ServiceDesk Pilot 的桥接架构里 sender 永远是 admin（admin 账号代理转发），真正的报障人在包络 `成员:` 字段里。
+
+**修复**：本场景已通过 `wechat-agentteams-e2e/prompts/manager-team-prompt.md` 第一章 "sender / 身份规则覆盖" 解决。reset 后 Manager 启动会读新 prompt。
+
+### Q14: Manager 派了 ticket-intake 后没继续派 triage/resolution/verify
+
+**症状**：state.json 显示 `active_tasks: [{assigned_to: ticket-intake}]`，但 triage-analyst / resolution / verify 从未收到任务，Manager 直接在群里回复 "工单已创建"。
+
+**根因**：LLM 倾向于简化流程，看到 ticket-intake 派出后立刻回群，跳过后续 Worker。
+
+**修复**：已通过 `manager-team-prompt.md` 第六章 "强制派单规则" 第 4 条 "派单链必须完整跑完（顺序强约束）" 解决。规则为：
+```
+ticket-intake → triage-analyst → resolution → verify
+每一步必须等当前 Worker 的 TASK_COMPLETED 回报到达后，才能派下一个
+不允许在派单链没跑完时就在群里回 [群回复]
+```
+
+### Q15: Manager 的 `[群回复]` 消息没出现在 wechat.html / 带 `*` 前缀
+
+**症状**：Manager 回了群，但 wechat.html 看不到；或者回复内容以 `* [群回复]` 开头。
+
+**根因 1**：LLM 加了 markdown 修饰（如 `*` 斜体），破坏 `[群回复] ` 前缀字节级约束。
+**根因 2**：旧版本 Bridge 只匹配 `body.startswith("[群回复]")`，前缀不严格就漏识别。
+
+**修复（双保险）**：
+1. `manager-team-prompt.md` 第一章 "字节级约束" + 5 个错误示例 + 1 个正确示例
+2. `bridge/server.py` 兜底分支：`role == "manager" and room_label == 网关房` → 自动标 `wechat_reply`，不依赖前缀
+
+### Q16: reset-demo.ps1 跑到一半 docker 命令全部 500 失败
+
+**症状**：所有 `docker exec / docker logs` 返回 `request returned 500 Internal Server Error for API route and version .../dockerDesktopLinuxEngine/...`。
+
+**根因**：Docker Desktop 引擎在 controller 重启过程中 API 路由短暂失败，PowerShell 不抛异常（只是非零 exit），导致后续步骤看似在跑实则无效。
+
+**修复**：`reset-demo.ps1` Step 0 预检 `docker info + docker version`，失败立刻退出并提示重启 Docker Desktop。
+
+### Q17: Higress Console (http://127.0.0.1:18080/) 登录页看不到密码框
+
+**症状**：浏览器打开 Higress Console 后页面有 username 输入框但没有 password 输入框，无法登录。
+
+**根因**：Higress Console 是 React SPA 应用，HTML body 仅 ~2741 字符，登录表单由客户端 JS hydration 后才动态注入。当前环境下 SPA hydration 可能失败（属 Higress 镜像层 / SPA 资源加载问题）。
+
+**绕过**：直接用 API 登录（也是 `setup-higress.sh` 实际使用的方式）：
+```bash
+curl -s -c cookie.txt -X POST http://127.0.0.1:18080/session/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"AgentTeams2026"}'
+# 返回 HTTP 201 + Set-Cookie _hi_sess=..., 凭证正确
+```
+
+**未在本次修复范围**：此问题属 Higress Console 镜像 / SPA 资源加载问题，不在 ServiceDesk Pilot e2e 范围。
+
 
 ---
 

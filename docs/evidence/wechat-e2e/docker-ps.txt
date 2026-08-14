@@ -1,0 +1,7 @@
+NAMES                              STATUS          IMAGE
+agentteams-worker-verify           Up 29 minutes   higress-registry.cn-hangzhou.cr.aliyuncs.com/agentteams/agentteams-worker:latest
+agentteams-worker-resolution       Up 29 minutes   higress-registry.cn-hangzhou.cr.aliyuncs.com/agentteams/agentteams-worker:latest
+agentteams-worker-triage-analyst   Up 29 minutes   higress-registry.cn-hangzhou.cr.aliyuncs.com/agentteams/agentteams-worker:latest
+agentteams-worker-ticket-intake    Up 30 minutes   higress-registry.cn-hangzhou.cr.aliyuncs.com/agentteams/agentteams-worker:latest
+agentteams-manager                 Up 32 minutes   higress-registry.cn-hangzhou.cr.aliyuncs.com/agentteams/agentteams-manager-copaw:latest
+agentteams-controller              Up 33 minutes   agentteams/agentteams-embedded:fixed
